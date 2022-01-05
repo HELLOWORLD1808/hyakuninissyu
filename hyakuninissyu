@@ -1,0 +1,2546 @@
+<html>
+<head>
+doget
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<title>下福田の生徒が作ったサイト</title>
+<meta property="og:locale" content="ja_JP" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="小倉百人一首ゲーム!!" />
+<script type="text/javascript" charset="utf-8">
+<!--
+var ajax = createHttpRequest();
+var CNS_100 = 100;		//百人一首総数
+var CNS_50 = 50;		//50枚位置暗記モードの枚数
+var CNS_ERR = "#ff9900";	//入力エラー
+var CNS_NOM = "#ffffff";	//入力正常
+var CNS_EMBED1 = "<embed src='";		//音声読み上げ用コード1 ※html5未対応ブラウザ用
+var CNS_EMBED2 = "' style='width:1px;height:1px;' autostart='true' autoplay='true' loop='false' />";		//音声読み上げ用コード2 ※html5未対応ブラウザ用
+var CNS_KU1 = "ku1";		//句（画面上側）
+var CNS_KU2 = "ku2";		//句（画面下側）
+var CNS_MSG_QUEST_EXP = "キークエストをクリアすると、遊べるクエストが最大20種類まで増えます。";
+var kaminokuId = "";		//上の句の画面上ID
+var shimonokuId = "";		//下の句の画面上ID
+var timerA;			//１問単位のタイマー	（解答権がある状態で作動）
+var timerB;			//次の問題作成のタイマー（正解・時間切れ後に次の問題を作成するときに作動）
+var timerK;			//経過時間のタイマー
+var timerL;			//１問単位の経過時間のタイマー
+var timerM;			//暗記時間のタイマー
+var timerT;			//画像先読みチェックのタイマー
+var kaminokuCharAt;		//上の句の現在何文字目か
+var shimonokuCharAt;		//下の句の現在何文字目か
+var eachQSecond = 0;	//各問の経過時間　※クエストのスコア計算で使用
+
+// 歌データ(0：上の句、1：下の句、2：上の句の決まり字、3：下の句の決まり字)
+// 注)No.44の上の句は「あふことの」「あうことの」ではなく「おおことの」とした（決まり字にそろえる）
+//    No.54の下の句の決まり字は「きょうを」、No.60の下の句の決まり字は「きょうこ」とする。ただし、決まり字数の範囲指定では3文字「けふを」「けふこ」として扱う
+//    No.87の下の句の決まり字は「き」とする（1字決まり扱い）
+var tankas = [
+	 ["あきのたの　かりおのいおの　とまをあらみ","わがころもでは　つゆにぬれつつ","あきの","わがころもでは"]
+	,["はるすぎて　なつきにけらし　しろたえの","ころもほすちょう　あまのかぐやま","はるす","ころもほ"]
+	,["あしびきの　やまどりのおの　しだりおの","ながながしよを　ひとりかもねん","あし","ながな"]
+	,["たごのうらに　うちいでてみれば　しろたえの","ふじのたかねに　ゆきはふりつつ","たご","ふじ"]
+	,["おくやまに　もみじふみわけ　なくしかの","こえきくときぞ　あきはかなしき","おく","こえ"]
+	,["かささぎの　わたせるはしに　おくしもの","しろきをみれば　よぞふけにける","かさ","しろ"]
+	,["あまのはら　ふりさけみれば　かすがなる","みかさのやまに　いでしつきかも","あまの","みか"]
+	,["わがいおは　みやこのたつみ　しかぞすむ","よをうじやまと　ひとはいうなり","わがい","よをう"]
+	,["はなのいろは　うつりにけりな　いたずらに","わがみよにふる　ながめせしまに","はなの","わがみよ"]
+	,["これやこの　ゆくもかえるも　わかれては","しるもしらぬも　おうさかのせき","これ","しる"]
+	,["わたのはら　やそしまかけて　こぎいでぬと","ひとにはつげよ　あまのつりぶね","わたのはらや","ひとには"]
+	,["あまつかぜ　くものかよいじ　ふきとじよ","おとめのすがた　しばしとどめん","あまつ","おと"]
+	,["つくばねの　みねよりおつる　みなのがわ","こいぞつもりて　ふちとなりぬる","つく","こいぞ"]
+	,["みちのくの　しのぶもじずり　たれゆえに","みだれそめにし　われならなくに","みち","みだれそ"]
+	,["きみがため　はるののにいでて　わかなつむ","わがころもでに　ゆきはふりつつ","きみがためは","わがころもでに"]
+	,["たちわかれ　いなばのやまの　みねにおうる","まつとしきかば　いまかえりこん","たち","まつと"]
+	,["ちはやぶる　かみよもきかず　たつたがわ","からくれないに　みずくくるとは","ちは","から"]
+	,["すみのえの　きしによるなみ　よるさえや","ゆめのかよいじ　ひとめよくらん","す","ゆめ"]
+	,["なにわがた　みじかきあしの　ふしのまも","あわでこのよを　すぐしてよとや","なにわが","あわで"]
+	,["わびぬれば　いまはたおなじ　なにわなる","みをつくしても　あわんとぞおもう","わび","みをつくしても"]
+	,["いまこんと　いいしばかりに　ながつきの","ありあけのつきを　まちいでつるかな","いまこ","あり"]
+	,["ふくからに　あきのくさきの　しおるれば","むべやまかぜを　あらしというらん","ふ","むべ"]
+	,["つきみれば　ちぢにものこそ　かなしけれ","わがみひとつの　あきにはあらねど","つき","わがみひ"]
+	,["このたびは　ぬさもとりあえず　たむけやま","もみじのにしき　かみのまにまに","この","もみ"]
+	,["なにしおわば　おうさかやまの　さねかずら","ひとにしられで　くるよしもがな","なにし","ひとにし"]
+	,["おぐらやま　みねのもみじば　こころあらば","いまひとたびの　みゆきまたなん","おぐ","いまひとたびのみ"]
+	,["みかのはら　わきてながるる　いずみがわ","いつみきとてか　こいしかるらん","みかの","いつ"]
+	,["やまざとは　ふゆぞさびしさ　まさりける","ひとめもくさも　かれぬとおもえば","やまざ","ひとめ"]
+	,["こころあてに　おらばやおらん　はつしもの","おきまどわせる　しらぎくのはな","こころあ","おき"]
+	,["ありあけの　つれなくみえし　わかれより","あかつきばかり　うきものはなし","ありあ","あか"]
+	,["あさぼらけ　ありあけのつきと　みるまでに","よしののさとに　ふれるしらゆき","あさぼらけあ","よし"]
+	,["やまがわに　かぜのかけたる　しがらみは","ながれもあえぬ　もみじなりけり","やまが","ながれ"]
+	,["ひさかたの　ひかりのどけき　はるのひに","しずこころなく　はなのちるらん","ひさ","しず"]
+	,["たれをかも　しるひとにせん　たかさごの","まつもむかしの　ともならなくに","たれ","まつも"]
+	,["ひとはいさ　こころもしらず　ふるさとは","はなぞむかしの　かににおいける","ひとは","はなぞ"]
+	,["なつのよは　まだよいながら　あけぬるを","くものいずこに　つきやどるらん","なつ","くもの"]
+	,["しらつゆに　かぜのふきしく　あきののは","つらぬきとめぬ　たまぞちりける","しら","つ"]
+	,["わすらるる　みをばおもわず　ちかいてし","ひとのいのちの　おしくもあるかな","わすら","ひとの"]
+	,["あさじうの　おののしのはら　しのぶれど","あまりてなどか　ひとのこいしき","あさじ","あまり"]
+	,["しのぶれど　いろにいでにけり　わがこいは","ものやおもうと　ひとのとうまで","しの","もの"]
+	,["こいすちょう　わがなはまだき　たちにけり","ひとしれずこそ　おもいそめしか","こい","ひとし"]
+	,["ちぎりきな　かたみにそでを　しぼりつつ","すえのまつやま　なみこさじとは","ちぎりき","す"]
+	,["あいみての　のちのこころに　くらぶれば","むかしはものを　おもわざりけり","あい","むか"]
+	,["おおことの　たえてしなくば　なかなかに","ひとをもみをも　うらみざらまし","おおこ","ひとを"]
+	,["あわれとも　いうべきひとは　おもおえで","みのいたずらに　なりぬべきかな","あわれ","みの"]
+	,["ゆらのとを　わたるふなびと　かじをたえ","ゆくえもしらぬ　こいのみちかな","ゆら","ゆく"]
+	,["やえむぐら　しげれるやどの　さびしきに","ひとこそみえね　あきはきにけり","やえ","ひとこそみ"]
+	,["かぜをいたみ　いわうつなみの　おのれのみ","くだけてものを　おもうころかな","かぜを","くだ"]
+	,["みかきもり　えじのたくひの　よるはもえ","ひるはきえつつ　ものをこそおもえ","みかき","ひる"]
+	,["きみがため　おしからざりし　いのちさえ","ながくもがなと　おもいけるかな","きみがためお","ながく"]
+	,["かくとだに　えやはいぶきの　さしもぐさ","さしもしらじな　もゆるおもいを","かく","さ"]
+	,["あけぬれば　くるるものとは　しりながら","なおうらめしき　あさぼらけかな","あけ","なおう"]
+	,["なげきつつ　ひとりぬるよの　あくるまは","いかにひさしき　ものとかはしる","なげき","いか"]
+	,["わすれじの　ゆくすえまでは　かたければ","きょうをかぎりの　いのちともがな","わすれ","きょうを"]
+	,["たきのおとは　たえてひさしく　なりぬれど","なこそながれて　なおきこえけれ","たき","なこ"]
+	,["あらざらん　このよのほかの　おもいでに","いまひとたびの　あうこともがな","あらざ","いまひとたびのあ"]
+	,["めぐりあいて　みしやそれとも　わかぬまに","くもがくれにし　よわのつきかな","め","くもが"]
+	,["ありまやま　いなのささはら　かぜふけば","いでそよひとを　わすれやはする","ありま","いで"]
+	,["やすらわで　ねなましものを　さよふけて","かたぶくまでの　つきをみしかな","やす","かた"]
+	,["おおえやま　いくののみちの　とおければ","まだふみもみず　あまのはしだて","おおえ","まだ"]
+	,["いにしえの　ならのみやこの　やえざくら","きょうここのえに　においぬるかな","いに","きょうこ"]
+	,["よをこめて　とりのそらねは　はかるとも","よにおうさかの　せきはゆるさじ","よを","よに"]
+	,["いまはただ　おもいたえなん　とばかりを","ひとずてならで　いうよしもがな","いまは","ひとず"]
+	,["あさぼらけ　うじのかわぎり　たえだえに","あらわれわたる　せぜのあじろぎ","あさぼらけう","あら"]
+	,["うらみわび　ほさぬそでだに　あるものを","こいにくちなん　なこそおしけれ","うら","こいに"]
+	,["もろともに　あわれとおもえ　やまざくら","はなよりほかに　しるひともなし","もろ","はなよ"]
+	,["はるのよの　ゆめばかりなる　たまくらに","かいなくたたん　なこそおしけれ","はるの","かい"]
+	,["こころにも　あらでうきよに　ながらえば","こいしかるべき　よわのつきかな","こころに","こいし"]
+	,["あらしふく　みむろのやまの　もみじばは","たつたのかわの　にしきなりけり","あらし","たつ"]
+	,["さびしさに　やどをたちいでて　ながむれば","いずこもおなじ　あきのゆうぐれ","さ","いず"]
+	,["ゆうされば　かどたのいなば　おとずれて","あしのまろやに　あきかぜぞふく","ゆう","あし"]
+	,["おとにきく　たかしのはまの　あだなみは","かけじやそでの　ぬれもこそすれ","おと","かけ"]
+	,["たかさごの　おのえのさくら　さきにけり","とやまのかすみ　たたずもあらなん","たか","と"]
+	,["うかりける　ひとをはつせの　やまおろしよ","はげしかれとは　いのらぬものを","うか","はげ"]
+	,["ちぎりおきし　させもがつゆを　いのちにて","あわれことしの　あきもいぬめり","ちぎりお","あわれ"]
+	,["わたのはら　こぎいでてみれば　ひさかたの","くもいにまごう　おきつしらなみ","わたのはらこ","くもい"]
+	,["せをはやみ　いわにせかるる　たきがわの","われてもすえに　あわんとぞおもう","せ","われ"]
+	,["あわじしま　かようちどりの　なくこえに","いくよねざめぬ　すまのせきもり","あわじ","いく"]
+	,["あきかぜに　たなびくくもの　たえまより","もれいずるつきの　かげのさやけさ","あきか","もれ"]
+	,["ながからん　こころもしらず　くろかみの","みだれてけさは　ものをこそおもえ","ながか","みだれて"]
+	,["ほととぎす　なきつるかたを　ながむれば","ただありあけの　つきぞのこれる","ほ","ただ"]
+	,["おもいわび　さてもいのちは　あるものを","うきにたえぬは　なみだなりけり","おも","うき"]
+	,["よのなかよ　みちこそなけれ　おもいいる","やまのおくにも　しかぞなくなる","よのなかよ","やま"]
+	,["ながらえば　またこのごろや　しのばれん","うしとみしよぞ　いまはこいしき","ながら","うし"]
+	,["よもすがら　ものおもうころは　あけやらで","ねやのひまさえ　つれなかりけり","よも","ね"]
+	,["なげけとて　つきやはものを　おもわする","かこちがおなる　わがなみだかな","なげけ","かこ"]
+	,["むらさめの　つゆもまだひぬ　まきのはに","きりたちのぼる　あきのゆうぐれ","む","き"]
+	,["なにわえの　あしのかりねの　ひとよゆえ","みをつくしてや　こいわたるべき","なにわえ","みをつくしてや"]
+	,["たまのおよ　たえなばたえね　ながらえば","しのぶることの　よわりもぞする","たま","しの"]
+	,["みせばやな　おじまのあまの　そでだにも","ぬれにぞぬれし　いろはかわらず","みせ","ぬ"]
+	,["きりぎりす　なくやしもよの　さむしろに","ころもかたしき　ひとりかもねん","きり","ころもか"]
+	,["わがそでは　しおひにみえぬ　おきのいしの","ひとこそしらね　かわくまもなし","わがそ","ひとこそし"]
+	,["よのなかは　つねにもがもな　なぎさこぐ","あまのおぶねの　つなでかなしも","よのなかは","あまの"]
+	,["みよしのの　やまのあきかぜ　さよふけて","ふるさとさむく　ころもうつなり","みよ","ふる"]
+	,["おおけなく　うきよのたみに　おおうかな","わがたつそまに　すみぞめのそで","おおけ","わがた"]
+	,["はなさそう　あらしのにわの　ゆきならで","ふりゆくものは　わがみなりけり","はなさ","ふり"]
+	,["こぬひとを　まつほのうらの　ゆうなぎに","やくやもしおの　みもこがれつつ","こぬ","やく"]
+	,["かぜそよぐ　ならのおがわの　ゆうぐれは","みそぎぞなつの　しるしなりける","かぜそ","みそ"]
+	,["ひともおし　ひともうらめし　あじきなく","よをおもうゆえに　ものおもうみは","ひとも","よをお"]
+	,["ももしきや　ふるきのきばの　しのぶにも","なおあまりある　むかしなりけり","もも","なおあ"]
+];
+
+//対戦相手
+var arrOpoList = ["べっぷライム","はまわきパープル","かんかいじブルー","ほりたオレンジ","みょうばんイエロー","かんなわブラウン","しばせきピンク","かめがわグリーン"];
+var arrOpoLevelList = [1,2,3,4,5,6,7,8];
+var arrOpoCd = ["01","02","03","04","05","06","07","08"];
+var arrOpoColor = ["#009933","#330066","#000099","#ff6600","#999900","#663300","#ff3366","#006600"];
+
+//クエスト
+var arrQuest = [
+	 [1,"初めの十枚にて",0,10,1,10,0,1,1,0,7,"歌番号1～10の札を、時間内に10枚中7枚以上取れればクリア"]
+	,[2,"前半五十枚にて",0,10,1,50,0,1,1,0,7,"歌番号1～50の札を、時間内に10枚中7枚以上取れればクリア"]
+	,[3,"後半五十枚にて",0,10,51,100,0,1,1,0,7,"歌番号51～100の札を、時間内に10枚中7枚以上取れればクリア"]
+	,[4,"百枚すべてにて",0,10,1,100,0,1,1,0,7,"歌番号1～100の札を、時間内に10枚中7枚以上取れればクリア"]
+	,[5,"べっぷライムと対戦",1,10,1,100,0,1,1,0,0,"【キークエスト】　べっぷライムに勝てばクリア"]
+	,[6,"半分の札が逆向き",1,10,1,100,0,1,1,1,0,"べっぷライムに勝てばクリア。半分の取り札が逆向きだ"]
+	,[7,"はまわきパープルと対戦",2,10,1,100,0,1,1,1,0,"はまわきパープルに勝てばクリア"]
+	,[8,"下の句から当てて",1,10,1,100,1,1,1,0,0,"べっぷライムに勝てばクリア。下の句から上の句を当てるんだ"]
+	,[9,"べっぷライムとのんびり",1,50,1,100,0,1,0,1,0,"べっぷライムに勝てばクリア。全部で50問あるぞ"]
+	,[10,"かんかいじブルーと対戦",3,10,1,100,0,1,1,1,0,"【キークエスト】　かんかいじブルーに勝てばクリア"]
+	,[11,"札が毎回変わっちゃう",3,20,1,100,0,1,0,1,0,"かんかいじブルーに勝てばクリア。並んでいる取り札が毎回変わるぞ"]
+	,[12,"ほりたオレンジと対戦",4,10,1,100,0,1,1,1,0,"ほりたオレンジに勝てばクリア"]
+	,[13,"札が全部逆向き",3,10,1,100,0,1,1,2,0,"かんかいじブルーに勝てばクリア。全部の取り札が逆向きだ"]
+	,[14,"みょうばんイエローと対戦",5,20,1,100,0,1,0,1,0,"みょうばんイエローに勝てばクリア"]
+	,[15,"かんなわブラウンと対戦",6,25,1,100,0,1,0,1,0,"【キークエスト】　かんなわブラウンに勝てばクリア"]
+	,[16,"十五枚から探して",5,15,1,100,0,2,1,1,0,"みょうばんイエローに勝てばクリア。取り札が15枚あるぞ"]
+	,[17,"たっぷり百枚",4,100,1,100,0,1,0,1,0,"ほりたオレンジに勝てばクリア。全部で100問あるぞ"]
+	,[18,"しばせきピンクと対戦",7,30,1,100,0,1,0,1,0,"しばせきピンクに勝てばクリア"]
+	,[19,"しばせきピンクの挑戦状",7,30,1,100,0,2,0,1,0,"しばせきピンクに勝てばクリア。取り札が15枚あるぞ"]
+	,[20,"かめがわグリーンと対戦",8,50,1,100,0,1,0,1,0,"かめがわグリーンに勝てばクリア"]
+];
+var arrQuestStr = "";
+var arrQuestIdx = -1;
+var arrQuestResult = 9;
+var arrGetRateQuest = new Array(arrQuest.length);
+
+var arrAns = new Array(CNS_100);
+var arrPos = new Array(9);	// 札の位置ごとに解答の歌番号を格納
+var arrPos2 = new Array(CNS_50);	// 札の位置ごとに解答の歌番号を格納（50枚位置暗記モード用）
+var arrAnsPos = new Array(CNS_100);	// 各問ごとの、正解札の位置
+var arrIsBlank = new Array(CNS_100);	// 各問が空札か否かを格納（50枚位置暗記モード用）
+var startFlg = 0;			// スタートフラグ：スタートしたら1
+var endFlg = 0;				// 終了フラグ：終了したら1
+var answerableFlg = 0;			// 解答可能フラグ：解答可能なら1
+var answerableOpoFlg = 0;		// 相手の解答可能フラグ：解答可能なら1
+var freeFlg = 1;				// 自由設定モードフラグ　※スマホを考慮し1で初期化しておく
+var questFlg = 0;				// クエストフラグ：クエスト選択時は1
+var sportFlg = 0;				// 競技フラグ：50枚位置暗記モード選択時は1
+var memorizingFlg = 0;			// 暗記中フラグ：暗記中は1
+var globAnsPos = -1;
+var globOpoMisPos = -1;
+var globCardNum = 0;
+var globInterval = 0;			// 文字表示のインターバル
+var globOpoChar = 0;			// 相手の解答タイミング
+var globOpoRightFlg = 0;		// 相手の正解・不正解フラグ：正解なら1
+var qNum = 0;
+
+var globYourLevel = 0;
+var globYourPt = 0;
+var globYourGet = 0;
+var globYourLos = 0;
+var globYourMis = 0;
+var globOpoLevel = 0;
+var globOpoPt = 0;
+var globOpoGet = 0;
+var globOpoMis = 0;
+var globQuestScore = 0;
+
+
+var avrTime = 0;	// 対戦相手なしの場合の平均時間
+
+var shuffleNumbers = new Array(CNS_100);
+defaultNum();
+var curQ = 0;
+var cardGetStr = "";		//札取り結果
+var arrGetRateKami = new Array(CNS_100);	//上の句→下の句の各取り札成績
+var arrGetRateShimo = new Array(CNS_100);	//下の句→上の句の各取り札成績
+
+var arrTorifuda = new Array(CNS_100 * 4 + 1);
+for (var iGl = 0; iGl < arrTorifuda.length; iGl++) {
+	arrTorifuda[iGl] = new Image();
+}
+arrTorifuda[0].src = "https://bepper.jp/8to/100nin1shu/torifuda/000.png";
+var imgBlank = new Image();
+imgBlank.src = "https://bepper.jp/8to/100nin1shu/torifuda/blank.png";
+var audioFlg = false;
+var audioObj;
+var imgPreLoadDoneFlg = new Array(4).fill(false);
+var imgPreLoadNeedFlg = new Array(4).fill(false);
+
+// 初期表示
+function gameLoad(){
+
+	// 前回値取得
+	getSettings();
+
+	// 画像の先読み（下の句100枚のみ）
+	imgPreLoadNeedFlg[0] = false;
+	preLoadImages(0);
+
+	// ブラウザチェック
+	checkBrowser();
+	
+	// スマホは1固定
+	changeSetMode(1);
+
+	// ゲームリセット
+	resetGame();
+
+	return;
+}
+
+// 画像先読みチェック
+function checkPreLoadImages() {
+	if (timerT) {
+		clearTimeout(timerT);
+	}
+	// 先読みチェック要否を判定し、必要なら画面ロック
+	var isNeedCheckPreLoadImages = false;
+	for (var i = 0; i < 4; i++) {
+		if (imgPreLoadNeedFlg[i] && !imgPreLoadDoneFlg[i]) {
+			isNeedCheckPreLoadImages = true;
+			break;
+		}
+	}
+	if (!isNeedCheckPreLoadImages) {
+		return;
+	}
+	changeLock(true);
+	document.getElementById("stsMsg").innerHTML = "読み込み中";
+
+	// 先読みチェック
+	var isImgLoaded = true;
+	if (!arrTorifuda[0].complete || !imgBlank.complete) {
+		isImgLoaded = false;
+	} else {
+		for (var i = 0; i < 4; i++) {
+			if (imgPreLoadNeedFlg[i] && !imgPreLoadDoneFlg[i]) {
+				for (var j = 0; j < CNS_100; j++) {
+					if (!arrTorifuda[i * CNS_100 + j + 1].complete) {
+						isImgLoaded = false;
+						break;
+					}
+				}
+				if (isImgLoaded) {
+					imgPreLoadDoneFlg[i] = true;
+				} else {
+					break;
+				}
+			}
+		}
+	}
+	if (isImgLoaded) {
+		changeLock(false);
+		imgPreLoadFlg = true;
+		document.getElementById("stsMsg").innerHTML = "「スタート」ボタンを押してゲームを始めてください。";
+	} else {
+		document.getElementById("stsMsg").innerHTML += ".";
+		timerT = setTimeout('checkPreLoadImages()', 1000);
+	}
+	return;
+}
+
+// 前回設定値の取得
+function getSettings(){
+	var beforeOguraMode = getCookie("setOguraMode");
+	var beforeOpo = getCookie("setOpo");
+	var beforeNumBegin = getCookie("setNumBegin");
+	var beforeNumEnd = getCookie("setNumEnd");
+	var beforeNumQ = getCookie("setNumQ");
+	var beforeNumDetMin = getCookie("setNumDetMin");
+	var beforeNumDetMax = getCookie("setNumDetMax");
+	var beforeQptn = getCookie("setQptn");
+	var beforeDif = getCookie("setDif");
+	var beforeTimeLimit = getCookie("setTimeLimit");
+	var beforePosition = getCookie("setPosition");
+	var beforeDirection = getCookie("setDirection");
+	var beforeOrder = getCookie("setOrder");
+	var beforeVoice = getCookie("setVoice");
+	var beforeMemoTime = getCookie("setMemoTime");
+	var beforeBlankSkip = getCookie("setBlankSkip");
+	var beforeYourLevel = getCookie("setYourLevel");
+	var beforeQuestStr = getCookie("setQuestStr");
+
+	try{
+		// モード選択に対応している場合
+		try{
+			if(beforeOguraMode == "2"){
+				document.form1.setMode[1].checked = true;
+			}else if(beforeOguraMode == "3"){
+				document.form1.setMode[2].checked = true;
+			}else{
+				document.form1.setMode[0].checked = true;
+			}
+		}catch(e){
+			document.form1.setMode[0].checked = true;
+		}
+	}catch(e){
+		// モード選択に対応していない場合は、何もしない
+	}
+	try{
+		document.form1.opo.selectedIndex = Math.floor(beforeOpo);
+	}catch(e){
+		document.form1.opo.selectedIndex = 0;
+	}
+	try{
+		if(beforeNumBegin == null || beforeNumBegin == ""){
+			document.form1.numBegin.value = "1";
+		}else{
+			document.form1.numBegin.value = beforeNumBegin;
+		}
+	}catch(e){
+		document.form1.numBegin.value = "1";
+	}
+	try{
+		if(beforeNumEnd == null || beforeNumEnd == ""){
+			document.form1.numEnd.value = "100";
+		}else{
+			document.form1.numEnd.value = beforeNumEnd;
+		}
+	}catch(e){
+		document.form1.numEnd.value = "100";
+	}
+	try{
+		if(beforeNumQ == null || beforeNumQ == ""){
+			document.form1.numQ.value = "10";
+		}else{
+			document.form1.numQ.value = beforeNumQ;
+		}
+	}catch(e){
+		document.form1.numQ.value = "10";
+	}
+	try{
+		document.form1.qptn.selectedIndex = Math.floor(beforeQptn);
+	}catch(e){
+		document.form1.qptn.selectedIndex = 0;
+	}
+	// 出題形式に応じて、決まり字数範囲（上限）の復元値を切り替える
+	try{
+		if(beforeNumDetMin == null || beforeNumDetMin == ""){
+			document.form1.numDetMin.value = "1";
+		}else{
+			document.form1.numDetMin.value = beforeNumDetMin;
+		}
+	}catch(e){
+		document.form1.numDetMin.value = "1";
+	}
+	try{
+		if(beforeNumDetMax == null || beforeNumDetMax == ""){
+			document.form1.numDetMax.value = "6";
+			if(document.form1.qptn.selectedIndex == 1){
+				document.form1.numDetMax.value = "8";
+			}
+		}else{
+			document.form1.numDetMax.value = beforeNumDetMax;
+		}
+	}catch(e){
+		document.form1.numDetMax.value = "6";
+		if(document.form1.qptn.selectedIndex == 1){
+			document.form1.numDetMax.value = "8";
+		}
+	}
+	try{
+		if(beforeDif == null || beforeDif == ""){
+			document.form1.dif.selectedIndex = 1;
+		}else{
+			if(Math.floor(beforeDif) > 2){
+				document.form1.dif.selectedIndex = 2;
+			}else{
+				document.form1.dif.selectedIndex = Math.floor(beforeDif);
+			}
+		}
+	}catch(e){
+		document.form1.dif.selectedIndex = 1;
+	}
+	try{
+		if(beforeTimeLimit == "N"){
+			document.form1.timeLimit[1].checked = true;
+		}else{
+			document.form1.timeLimit[0].checked = true;
+		}
+	}catch(e){
+		document.form1.timeLimit[0].checked = true;
+	}
+	try{
+		document.form1.position.selectedIndex = Math.floor(beforePosition);
+	}catch(e){
+		document.form1.position.selectedIndex = 0;
+	}
+	try{
+		document.form1.direction.selectedIndex = Math.floor(beforeDirection);
+	}catch(e){
+		document.form1.direction.selectedIndex = 0;
+	}
+	try{
+		document.form1.order.selectedIndex = Math.floor(beforeOrder);
+	}catch(e){
+		document.form1.order.selectedIndex = 0;
+	}
+	try{
+		document.form1.voicesel.selectedIndex = Math.floor(beforeVoice);
+	}catch(e){
+		document.form1.voicesel.selectedIndex = 0;
+	}
+	try{
+		globYourLevel = Math.floor(beforeYourLevel);
+		if(globYourLevel != 1 && globYourLevel != 2 && globYourLevel != 3 && globYourLevel != 4 && globYourLevel != 5 && globYourLevel != 6 && globYourLevel != 7 && globYourLevel != 8){
+			globYourLevel = 0;
+		}else{
+			// 自分がレベル1以上で、前回対戦相手がありの場合、現在のレベルより1つ強い相手をデフォルト選択
+			if(document.form1.opo.selectedIndex != 0){
+				var tmpOpoLevel = globYourLevel + 1;
+				if(tmpOpoLevel > 8) tmpOpoLevel = 8;
+				document.form1.opo.selectedIndex = tmpOpoLevel;
+			}
+		}
+	}catch(e){
+		globYourLevel = 0;
+	}
+
+
+	return;
+}
+
+// クッキーより前回設定値をゲット
+function getCookie(key){
+	try{
+		var tmp = document.cookie + ";";
+		var index1 = tmp.indexOf(key, 0);
+		if(index1 != -1){
+			tmp = tmp.substring(index1,tmp.length);
+			var index2 = tmp.indexOf("=",0) + 1;
+			var index3 = tmp.indexOf(";",index2);
+			return(unescape(tmp.substring(index2,index3)));
+		}
+	}catch(e){
+	}
+	return("");
+}
+
+// 今回設定値の保存
+function setSettings(){
+	var setOguraMode = 1;
+	var setMemoTime = 300;
+	var setBlankSkip = "";
+
+	var setOpo = document.form1.opo.selectedIndex;
+	var setNumBegin = document.form1.numBegin.value;
+	var setNumEnd = document.form1.numEnd.value;
+	var setNumQ = document.form1.numQ.value;
+	var setNumDetMin = document.form1.numDetMin.value;
+	var setNumDetMax = document.form1.numDetMax.value;
+	var setQptn = document.form1.qptn.selectedIndex;
+	var setDif = document.form1.dif.selectedIndex;
+	for (var i = 0; i < document.form1.timeLimit.length; i++){
+		if(document.form1.timeLimit[i].checked){
+			setTimeLimit = document.form1.timeLimit[i].value;
+			break;
+		}
+	}
+	var setPosition = document.form1.position.selectedIndex;
+	var setDirection = document.form1.direction.selectedIndex;
+	var setOrder = document.form1.order.selectedIndex;
+	var setVoice = document.form1.voicesel.selectedIndex;
+
+	try{
+		setCookie("setOguraMode", setOguraMode);
+		setCookie("setOpo", setOpo);
+		setCookie("setNumBegin", setNumBegin);
+		setCookie("setNumEnd", setNumEnd);
+		setCookie("setNumQ", setNumQ);
+		setCookie("setNumDetMin", setNumDetMin);
+		setCookie("setNumDetMax", setNumDetMax);
+		setCookie("setQptn", setQptn);
+		setCookie("setDif", setDif);
+		setCookie("setTimeLimit", setTimeLimit);
+		setCookie("setPosition", setPosition);
+		setCookie("setDirection", setDirection);
+		setCookie("setOrder", setOrder);
+		setCookie("setVoice", setVoice);
+		setCookie("setMemoTime", setMemoTime);
+		setCookie("setBlankSkip", setBlankSkip);
+	}catch(e){
+	}
+	
+	setSettingsLevel();
+	setSettingsQuest();
+	
+	return;
+}
+
+// 今回設定値の保存（レベル用）
+function setSettingsLevel(){
+	var setYourLevel = globYourLevel;
+	try{
+		setCookie("setYourLevel", setYourLevel);
+	}catch(e){
+	}
+	return;
+}
+
+// 今回設定値の保存（クエスト用）
+function setSettingsQuest(){
+	var setQuestStr = arrQuestStr;
+	try{
+		setCookie("setQuestStr", setQuestStr);
+	}catch(e){
+	}
+	return;
+}
+
+// 設定値をクッキーにセット
+function setCookie(key, val){
+	document.cookie = key + "=" + escape(val) + ";expires=Fri, 31-Dec-2030 23:59:59;";
+	return;
+}
+
+// 画像の先読み(0:下の句 1:上の句 2:下の句逆 3:上の句逆)
+function preLoadImages(key) {
+	for(var i = 0; i < CNS_100; i++) {
+		var strImageFileNum = ('000' + (i + 1 + key % 2 * CNS_100).toString()).slice(-3);
+		if (Math.floor(key / 2) == 1) {
+			strImageFileNum = 'r' + strImageFileNum;
+		}
+		arrTorifuda[i + 1 + CNS_100 * key].src = "https://bepper.jp/8to/100nin1shu/torifuda/" + strImageFileNum + ".png";
+	}
+	return;
+}
+
+// 追加画像の先読み
+function preLoadExtraImages() {
+	// 50枚位置暗記モードの場合
+	if (sportFlg == 1) {
+		imgPreLoadNeedFlg[2] = true;
+	// 50枚位置暗記モード以外の場合
+	} else {
+		if (document.form1.qptn.selectedIndex == 1) {
+			if (document.form1.direction.selectedIndex != 0) {
+				imgPreLoadNeedFlg[3] = true;
+			}
+			if (document.form1.direction.selectedIndex != 2) {
+				imgPreLoadNeedFlg[1] = true;
+			}
+		} else {
+			if (document.form1.direction.selectedIndex != 0) {
+				imgPreLoadNeedFlg[2] = true;
+			}
+		}
+	}
+	for (var i = 1; i < 4; i++) {
+		if (imgPreLoadNeedFlg[i] && !imgPreLoadDoneFlg[i]) {
+			preLoadImages(i);
+		}
+	}
+	return;
+}
+
+// ブラウザチェック
+function checkBrowser(){
+	var voiceFlg = 0;
+	try{
+		audioFlg = (window.HTMLAudioElement) && (document.createElement("audio").canPlayType("audio/mp3") != "");
+		audioObj = new Audio();
+	}catch(e){
+	}
+
+	// 音声読み上げ不可のブラウザの場合、音声読み上げを行わない
+	if(voiceFlg == 0 && !(audioFlg)){
+		document.getElementById("voiceTd").style.display = "none";
+		document.getElementById("nonVoiceTd").style.display = "block";
+		document.form1.voicesel.selectedIndex = 0;
+	}else{
+		document.getElementById("voiceTd").style.display = "block";
+		document.getElementById("nonVoiceTd").style.display = "none";
+	}
+
+	return;
+}
+
+// ゲームリセット（初期表示・「リセット」押下時・クエスト選択時）
+function resetGame(){
+	// タイマー初期化
+	if (timerA){
+		clearInterval(timerA);
+	}
+	if (timerB){
+		clearInterval(timerB);
+	}
+	if (timerK){
+		clearTimeout(timerK);
+	}
+	if (timerL){
+		clearTimeout(timerL);
+	}
+	if (timerM){
+		clearTimeout(timerM);
+	}
+
+	// スコア・表示初期化
+	initScore();
+
+	document.form1.resetB.disabled = false;
+	for(var i = 0; i < 9; i++){
+		arrPos[i] = 0;
+		document.getElementById("pos" + i.toString()).src = arrTorifuda[0].src;
+		// 札の色リセット
+		document.getElementById("utd" + i.toString()).style.border = "5px solid #ddffdd";
+	}
+	for(var i = 0; i < CNS_100; i++){
+		arrAnsPos[i] = -1;
+	}
+
+	// 対戦相手により画面制御
+	changeOpo();
+	// 難易度により画面制御
+	changeDif();
+	// 出題形式により画面制御
+	changeQptn(false);
+	// 音声読み上げにより画面制御
+	changeVoiceSel();
+
+	document.getElementById("stsMsg").innerHTML = "「スタート」ボタンを押してゲームを始めてください。";
+	
+	startFlg = 0;
+	endFlg = 0;
+	answerableFlg = 0;
+	answerableOpoFlg = 0;
+	memorizingFlg = 0;
+
+	//===== 画面ロック解除 =====
+	changeLock(false);
+	
+
+	return;
+}
+
+// ゲームスタート（「スタート」押下時）
+function startGame(){
+	if (timerA){
+		clearInterval(timerA);
+	}
+	if (timerK){
+		clearTimeout(timerK);
+	}
+	if (timerL){
+		clearTimeout(timerL);
+	}
+	if (timerM){
+		clearTimeout(timerM);
+	}
+
+	// スコア・表示初期化
+	initScore();
+
+	//===== 入力チェック =====
+	document.form1.numBegin.style.backgroundColor = CNS_NOM;
+	document.form1.numEnd.style.backgroundColor = CNS_NOM;
+	document.form1.numQ.style.backgroundColor = CNS_NOM;
+	document.form1.numDetMin.style.backgroundColor = CNS_NOM;
+	document.form1.numDetMax.style.backgroundColor = CNS_NOM;
+	document.form1.dif.style.backgroundColor = CNS_NOM;
+	document.form1.opo.style.backgroundColor = CNS_NOM;
+	document.form1.position.style.backgroundColor = CNS_NOM;
+
+	// 50枚位置暗記モードの場合
+	if(sportFlg == 1){
+		// なし選択時
+		if(document.form1.opo.selectedIndex == 0){
+			alert("50枚位置暗記モードでは、対戦相手を選択してください。");
+			document.form1.opo.style.backgroundColor = CNS_ERR;
+			document.form1.opo.focus();
+			return;
+		}
+	// 50枚位置暗記モード以外の場合
+	}else{
+		if(document.form1.numBegin.value == "" && document.form1.numEnd.value == "" && document.form1.numQ.value == ""){
+			document.form1.numBegin.value = 1;
+			document.form1.numEnd.value = 100;
+			document.form1.numQ.value = 100;
+		}
+		if(document.form1.numDetMin.value == "" && document.form1.numDetMax.value == ""){
+			document.form1.numDetMin.value = 1;
+			// 下の句→上の句の場合、決まり字数範囲の最大は8字
+			if(document.form1.qptn.selectedIndex == 1){
+				document.form1.numDetMax.value = 8;
+			}else{
+				document.form1.numDetMax.value = 6;
+			}
+		}
+		if(document.form1.numQ.value == "" || document.form1.numQ.value == undefined || document.form1.numQ.value.match(/[^0-9]+/) || document.form1.numQ.value == 0){
+			alert("問題数を正しく入力してください。");
+			document.form1.numQ.style.backgroundColor = CNS_ERR;
+			document.form1.numQ.focus();
+			return;
+		}
+		if(document.form1.numBegin.value == "" || document.form1.numBegin.value == undefined || document.form1.numBegin.value.match(/[^0-9]+/) || document.form1.numBegin.value < 1 || document.form1.numBegin.value > 100){
+			alert("歌番号の範囲を正しく指定してください。");
+			document.form1.numBegin.style.backgroundColor = CNS_ERR;
+			document.form1.numBegin.focus();
+			return;
+		}
+		if(document.form1.numEnd.value == "" || document.form1.numEnd.value == undefined || document.form1.numEnd.value.match(/[^0-9]+/) || document.form1.numEnd.value < 1 || document.form1.numEnd.value > 100){
+			alert("歌番号の範囲を正しく指定してください。");
+			document.form1.numEnd.style.backgroundColor = CNS_ERR;
+			document.form1.numEnd.focus();
+			return;
+		}
+		if(document.form1.numDetMin.value == "" || document.form1.numDetMin.value == undefined || document.form1.numDetMin.value.match(/[^0-9]+/) || document.form1.numDetMin.value < 1 || document.form1.numDetMin.value > 8 || (document.form1.qptn.selectedIndex != 1 && document.form1.numDetMin.value > 6)){
+			alert("決まり字数の範囲を正しく指定してください。");
+			document.form1.numDetMin.style.backgroundColor = CNS_ERR;
+			document.form1.numDetMin.focus();
+			return;
+		}
+		if(document.form1.numDetMax.value == "" || document.form1.numDetMax.value == undefined || document.form1.numDetMax.value.match(/[^0-9]+/) || document.form1.numDetMax.value < 1 || document.form1.numDetMax.value > 8 || (document.form1.qptn.selectedIndex != 1 && document.form1.numDetMax.value > 6)){
+			alert("決まり字数の範囲を正しく指定してください。");
+			document.form1.numDetMax.style.backgroundColor = CNS_ERR;
+			document.form1.numDetMax.focus();
+			return;
+		}
+		if(document.form1.opo.selectedIndex != 0 && document.form1.order.selectedIndex == 1){
+			alert("出題順を歌番号順にした場合は、対戦相手「なし」を選択してください。");
+			document.form1.opo.style.backgroundColor = CNS_ERR;
+			document.form1.opo.focus();
+			return;
+		}
+	}
+	var beginNum = Math.floor(document.form1.numBegin.value);
+	var endNum = Math.floor(document.form1.numEnd.value);
+	var detMinNum = Math.floor(document.form1.numDetMin.value);
+	var detMaxNum = Math.floor(document.form1.numDetMax.value);
+	
+	// 問題数
+	if(sportFlg == 1){
+		qNum = CNS_100;
+	}else{
+		qNum = Math.floor(document.form1.numQ.value);
+	}
+
+	// 範囲の歌の数を求める（歌番号範囲内で、決まり字数範囲を満たすもの）
+	var songsNumIgnoreDet = endNum - beginNum + 1;	// 決まり字数範囲を無視した、歌番号範囲内の歌の数
+	var songsNum = 0;
+	for(var i = beginNum - 1; i < endNum; i++){
+		var tmpKimariji = tankas[i][2];
+		if(document.form1.qptn.selectedIndex == 1){
+			tmpKimariji = tankas[i][3];
+		}
+		var tmpKimarijiLength = tmpKimariji.length;
+		if(tmpKimariji.match(/ょ/)){
+			tmpKimarijiLength--;
+		}
+		if(detMinNum <= tmpKimarijiLength && tmpKimarijiLength <= detMaxNum){
+			songsNum++;
+		}
+	}
+	
+	if(sportFlg != 1){
+		if(songsNumIgnoreDet < 1){
+			alert("歌番号の範囲を正しく指定してください。");
+			document.form1.numEnd.style.backgroundColor = CNS_ERR;
+			document.form1.numEnd.focus();
+			return;
+		}
+		if(songsNum < 1){
+			alert("決まり字数の範囲を正しく指定してください。");
+			document.form1.numDetMin.style.backgroundColor = CNS_ERR;
+			document.form1.numDetMin.focus();
+			return;
+		}
+		if(songsNum < qNum){
+			alert("問題数が多すぎます。");
+			document.form1.numQ.style.backgroundColor = CNS_ERR;
+			document.form1.numQ.focus();
+			return;
+		}
+		
+		// しばせきピンク選択時
+		if(document.form1.opo.selectedIndex == 7){
+			if(qNum < 3){
+				alert("しばせきピンクと対戦する場合は、問題数を3問以上にしてください。");
+				document.form1.numQ.style.backgroundColor = CNS_ERR;
+				document.form1.numQ.focus();
+				return;
+			}
+			
+			if(document.form1.dif.selectedIndex == 0){
+				alert("しばせきピンクと対戦する場合は、難易度「かんたん」を選べません。");
+				document.form1.dif.style.backgroundColor = CNS_ERR;
+				return;
+			}
+		}
+		
+		// かめがわグリーン選択時
+		if(document.form1.opo.selectedIndex == 8){
+			if(qNum < 6){
+				alert("かめがわグリーンと対戦する場合は、問題数を6問以上にしてください。");
+				document.form1.numQ.style.backgroundColor = CNS_ERR;
+				document.form1.numQ.focus();
+				return;
+			}
+			
+			if(document.form1.dif.selectedIndex == 0){
+				alert("かめがわグリーンと対戦する場合は、難易度「かんたん」を選べません。");
+				document.form1.dif.style.backgroundColor = CNS_ERR;
+				return;
+			}
+		}
+		if(document.form1.order.selectedIndex == 1 && songsNum != qNum){
+			alert("問題数が歌番号の範囲と合っていません。");
+			document.form1.numQ.style.backgroundColor = CNS_ERR;
+			document.form1.numQ.focus();
+			return;
+		}
+	}
+
+	globCardNum = [3,6,9][document.form1.dif.selectedIndex];
+	globInterval = [750,500,250][document.form1.dif.selectedIndex];
+	if(freeFlg == 1 && document.form1.memotime.value > 1){
+		document.form1.clockM.value = document.form1.memotime.value;
+	}
+
+	if(sportFlg != 1){
+		// 札の配置が「変わらない」の場合、問題数が取り札の数より多い場合はエラー
+		if(document.form1.position.selectedIndex == 1){
+			if(qNum > globCardNum){
+				alert("問題数が多すぎます。");
+				document.form1.numQ.style.backgroundColor = CNS_ERR;
+				document.form1.numQ.focus();
+				return;
+			}
+		}
+	}
+	
+	// 自由設定モードで暗記時間ありの場合、札の配置「毎回変わる」選択はエラー
+	if(freeFlg == 1 && document.form1.memotime.value > 1){
+		if(document.form1.position.selectedIndex == 0){
+			alert("暗記時間ありの場合は、札の配置「変わらない」を選んでください。");
+			document.form1.position.style.backgroundColor = CNS_ERR;
+			document.form1.position.focus();
+			return;
+		}
+	}
+
+try{
+	document.body.scrollTop += document.getElementById("buttonArea").getBoundingClientRect().top;
+}catch(e){
+	try{
+		var tmpElement = document.getElementById("buttonArea");
+		var tmpAbsoluteY = 0;
+		while(tmpElement){
+			tmpAbsoluteY += tmpElement.offsetTop;
+			tmpElement = tmpElement.offsetParent;
+		}
+		document.body.scrollTop += tmpAbsoluteY;
+	}catch(e2){
+	}
+}
+	
+	//===== 画面ロック =====
+	changeLock(true);
+	
+	//===== 解答作成 =====
+	if(sportFlg != 1 && document.form1.order.selectedIndex == 1){
+		defaultNum();	//番号順に出題
+	}else{
+		shuffleNum();	//ランダムに出題
+	}
+	for(var i = 0; i < CNS_100; i++){
+		arrAns[i] = 0;
+	}
+	var j = 0;
+	for(var i = 0; i < CNS_100; i++){
+		// 50枚位置暗記モードの場合
+		if(sportFlg == 1){
+			// 問題数は100問なので、解答も100問分用意する
+			arrAns[j] = shuffleNumbers[i];
+			j++;
+		// 50枚位置暗記モード以外の場合
+		}else{
+			// 条件を満たす解答だけを用意する
+			if(shuffleNumbers[i] >= beginNum && shuffleNumbers[i] <= endNum && j < qNum){
+				var tmpKimariji = tankas[shuffleNumbers[i]-1][2];
+				if(document.form1.qptn.selectedIndex == 1){
+					tmpKimariji = tankas[shuffleNumbers[i]-1][3];
+				}
+				var tmpKimarijiLength = tmpKimariji.length;
+				if(tmpKimariji.match(/ょ/)){
+					tmpKimarijiLength--;
+				}
+				if(detMinNum <= tmpKimarijiLength && tmpKimarijiLength <= detMaxNum){
+					arrAns[j] = shuffleNumbers[i];
+					j++;
+				}
+			}
+		}
+	}
+	startFlg = 1;
+	endFlg = 0;
+	// 50枚位置暗記モード、または、自由設定モードで2秒以上暗記時間が設定されている場合（※1秒はなし扱い）
+	if(sportFlg == 1 || (freeFlg == 1 && document.form1.memotime.value > 1) ){
+		memorizingFlg = 1;
+	}
+	
+	//===== 問題作成 =====
+	curQ = 0;
+	globAnsPos = -1;
+	makeQuestion();
+	
+	//===== 時間計測 =====
+	// 対戦相手なしの場合
+	if(document.form1.opo.selectedIndex == 0){
+		timeKeeper();
+	}
+	// クエストの場合
+	if(questFlg == 1){
+		timeKeeperEachQ();
+	}
+	
+	return;
+}
+
+// 問題作成
+function makeQuestion(){
+	var tmpYourLevelUpFlg = false;
+
+	if (timerB){
+		clearInterval(timerB);
+	}
+	if (timerL){
+		clearTimeout(timerL);
+	}
+	if (timerM){
+		clearTimeout(timerM);
+	}
+	
+	// 問題がすべて終わった場合
+	if (qNum == curQ){
+		// 対戦相手なしの場合
+		if(document.form1.opo.selectedIndex == 0){
+			if (timerK){
+				clearTimeout(timerK);
+			}
+			avrTime = Math.round(Math.floor(document.form1.clock1.value) / qNum * 100) / 100;
+			if(questFlg == 1){
+				if(arrQuestIdx >= 0 && arrQuest[arrQuestIdx][10] <= globYourGet){
+					document.getElementById("stsMsg").innerHTML = "クエスト<b>成功</b>です！！";
+					arrQuestResult = 1;
+				}else{
+					document.getElementById("stsMsg").innerHTML = "クエスト<b>失敗</b>です。";
+					arrQuestResult = 0;
+				}
+			}else{
+				document.getElementById("stsMsg").innerHTML = "ゲームクリアです！！　記録：１枚あたり <b>" + avrTime + "</b> 秒";
+			}
+		// 対戦相手ありの場合
+		} else {
+			if(questFlg == 1){
+				if(globYourPt > globOpoPt){
+					document.getElementById("stsMsg").innerHTML = "クエスト<b>成功</b>です！！";
+					arrQuestResult = 1;
+				}else{
+					document.getElementById("stsMsg").innerHTML = "クエスト<b>失敗</b>です。";
+					arrQuestResult = 0;
+				}
+			}else{
+				document.getElementById("stsMsg").innerHTML = "<b>" + globYourPt + "</b>対<b>" + globOpoPt + "</b>で、";
+				if(globYourPt > globOpoPt){
+					document.getElementById("stsMsg").innerHTML += "<b>あなたの勝ち</b>です!!";
+				}else if(globYourPt < globOpoPt){
+					document.getElementById("stsMsg").innerHTML += "<b>" + arrOpoList[document.form1.opo.selectedIndex - 1] + "の勝ち</b>です。";
+				}else{
+					document.getElementById("stsMsg").innerHTML += "<b>引き分け</b>です。";
+				}
+			}
+			answerableOpoFlg = 0;
+			
+			// ユーザが勝ち、自分のレベル＜相手のレベル　の場合、自分のレベルを相手のレベルまで上げる
+			if(globYourPt > globOpoPt && globYourLevel < globOpoLevel){
+				globYourLevel = globOpoLevel;
+				document.getElementById("yourLevel").innerHTML = "　レベル" + globYourLevel.toString();
+				tmpYourLevelUpFlg = true;
+			}
+		}
+		// クエストスコア追記
+		if(questFlg == 1){
+			document.getElementById("stsMsg").innerHTML += "<br>　クエストスコア：<b>" + globQuestScore + "</b>";
+		}
+		
+		// クエスト結果の書き換え処理
+		if(questFlg == 1 && arrQuestStr.length == 20 && arrQuestIdx >= 0){
+			var tmpArrQuestStr = "";
+			for(var i = 0; i < arrQuestStr.length; i++){
+				if(i == arrQuestIdx && arrQuestStr.charAt(i).toString() != "1"){
+					tmpArrQuestStr += arrQuestResult.toString();
+				}else{
+					tmpArrQuestStr += arrQuestStr.charAt(i).toString();
+				}
+			}
+			arrQuestStr = tmpArrQuestStr;
+		}
+		
+		endFlg = 1;
+		startFlg = 0;
+		answerableFlg = 0;
+
+		//===== 対戦成績登録 =====
+		sendScore();
+
+		//===== 画面ロック解除 =====
+		changeLock(false);
+
+		
+		// 設定の保存（レベル）
+		setSettingsLevel();
+
+		
+		// レベル上昇のポップアップ
+		if(tmpYourLevelUpFlg && questFlg != 1){
+			alert("あなたは「レベル" + globYourLevel.toString() + "」に上がりました!!");
+		}
+
+		// 対戦相手を自動的に強くするポップアップ
+		var tmpAutoPowerUpFlg = false;
+		if(tmpYourLevelUpFlg && qNum >= 5 && questFlg != 1){
+			if( (globYourLevel == 6 && (qNum < 3 || document.form1.dif.selectedIndex == 0)) || (globYourLevel == 7 && (qNum < 6 || document.form1.dif.selectedIndex == 0)) || globYourLevel == 8){
+				// 強化しない
+			}else{
+				tmpAutoPowerUpFlg = confirm("もっと強い対戦相手と遊びますか？");
+			}
+		}
+		if(tmpAutoPowerUpFlg){
+			try{
+				document.form1.opo.selectedIndex = globYourLevel + 1;
+				changeOpo();
+			}catch(e){
+				return;
+			}
+			startGame();
+		}
+		
+		return;
+	}
+
+	eachQSecond = 0;
+	shuffleNum();
+
+	// 各札の位置を決定
+	// 50枚位置暗記モードの場合
+	if(sportFlg == 1){
+		// 第1問かつ、暗記中の場合
+		if(curQ == 0 && memorizingFlg == 1){
+			
+			// 空札を決める
+			for(var i = 0; i < CNS_100; i++){
+				if(shuffleNumbers[i] > CNS_50){
+					arrIsBlank[i] = true;
+				}else{
+					arrIsBlank[i] = false;
+				}
+			}
+			
+			// 札の初期化
+			for(var i = 0; i < CNS_50; i++){
+				arrPos2[i] = 0;
+			}
+
+			// 全問題数分、解答の位置を先に決めてしまう（空札の場合は-1のまま）
+			for(var i = 0; i < qNum; i++){	//qNumは100
+				if(!arrIsBlank[i]){
+					while(1){
+						var tmpAnsPos = Math.floor(globCardNum * Math.random());
+						if(arrPos2[tmpAnsPos] == 0){
+							arrPos2[tmpAnsPos] = arrAns[i];
+							arrAnsPos[i] = tmpAnsPos + 100;
+							break;
+						}
+					}
+				}
+			}
+		}
+		// 暗記中でない場合
+		if(memorizingFlg == 0){
+			globAnsPos = arrAnsPos[curQ];
+		}
+
+	// 50枚位置暗記モード以外の場合
+	}else{
+		// 札の配置が「変わらない」の場合
+		if(document.form1.position.selectedIndex == 1){
+
+			// 第1問かつ、（自由設定モードかつ暗記時間ありで暗記済み）でない場合
+			if(curQ == 0 && !(freeFlg == 1 && document.form1.memotime.value > 1 && memorizingFlg == 0) ){
+				// 札の初期化
+				for(var i = 0; i < 9; i++){
+					arrPos[i] = 0;
+				}
+
+				// 全問題数分、解答の位置を先に決めてしまう
+				for(var i = 0; i < qNum; i++){
+					while(1){
+						var tmpAnsPos = Math.floor(globCardNum * Math.random());
+						if(arrPos[tmpAnsPos] == 0){
+							arrPos[tmpAnsPos] = arrAns[i];
+							arrAnsPos[i] = tmpAnsPos;
+							break;
+						}
+					}
+				}
+
+				var j = 0;
+
+				// 取り札が問題数より多い場合、ダミーの札で埋める
+				for(var i = 0; i < globCardNum; i++){
+					if(arrPos[i] == 0){
+						for(var k = 0; k < qNum; k++){
+							if(shuffleNumbers[j] == arrAns[k]){
+								j++;
+								break;
+							}
+						}
+						arrPos[i] = shuffleNumbers[j];
+						j++;
+					}
+				}
+			}
+			globAnsPos = arrAnsPos[curQ];
+
+		// 札の配置が「毎回変わる」の場合
+		}else{
+			var j = 0;
+			globAnsPos = Math.floor(globCardNum * Math.random());
+			arrAnsPos[curQ] = globAnsPos;	// 使用しないが、札の配置が「変わらない」場合と配列の設定値を合わせておいた
+			for(var i = 0; i < globCardNum; i++){
+				if(i == globAnsPos){
+					arrPos[i] = arrAns[curQ];
+				}else{
+					if(shuffleNumbers[j] == arrAns[curQ]){
+						j++;
+					}
+					arrPos[i] = shuffleNumbers[j];
+					j++;
+				}
+			}
+		}
+	}
+
+	// 画面に札を表示する
+	// 50枚位置暗記モードの場合
+	if(sportFlg == 1){
+		// 第2問以降の場合
+		if(curQ > 0){
+			// 既に解答済みの札を空白にする
+			for(var i = 0; i < curQ; i++){
+				if(arrAnsPos[i] != -1){
+					document.getElementById("pos" + (arrAnsPos[i]).toString()).src = imgBlank.src;
+				}
+			}
+		// 第1問の場合
+		}else{
+			// 暗記中の場合
+			if(memorizingFlg == 1){
+				for(var i = 0; i < globCardNum; i++){
+					var nTmpFileNum = arrPos2[i];
+					
+					// 半分までの札の場合、ファイル名先頭に「r」をつける（インデックスに200加算）
+					if(i < Math.floor(globCardNum / 2) ){
+						nTmpFileNum += CNS_100 * 2;
+					}
+					
+					document.getElementById("pos" + (i+100).toString()).src = arrTorifuda[nTmpFileNum].src
+				}
+			}
+		}
+	// 50枚位置暗記モード以外の場合
+	}else{
+		// 札の配置が「変わらない」かつ第2問以降の場合
+		if(document.form1.position.selectedIndex == 1 && curQ > 0){
+			// 既に解答済みの札を空白にする
+			for(var i = 0; i < curQ; i++){
+				document.getElementById("pos" + (arrAnsPos[i]).toString()).src = imgBlank.src;
+			}
+		// 上記以外の場合（＝札の再表示が必要な場合）
+		}else{
+			for(var i = 0; i < globCardNum; i++){
+				var nTmpFileNum = arrPos[i];
+				
+				// 下の句→上の句の場合、ファイル名読み替え（インデックスに100加算）
+				if(document.form1.qptn.selectedIndex == 1){
+					nTmpFileNum += CNS_100;
+				}
+				
+				// 札の向きがすべて相手の向きの場合
+				// または、札の向きが半分自分の向き、かつ、半分までの札の場合、ファイル名先頭に「r」をつける（インデックスに200加算）
+				if(document.form1.direction.selectedIndex == 2 || (document.form1.direction.selectedIndex == 1 && i < Math.floor(globCardNum / 2)) ){
+					nTmpFileNum += CNS_100 * 2;
+				}
+				
+				document.getElementById("pos" + i.toString()).src = arrTorifuda[nTmpFileNum].src
+			}
+		}
+	}
+
+	// 札の色リセット
+	for(var i = 0; i < globCardNum; i++){
+		var j = i;
+		if(sportFlg == 1){
+			j = i + 100;
+		}
+		document.getElementById("utd" + j.toString()).style.border = "5px solid #ddffdd";
+	}
+	
+	// 暗記中の場合、解答は不可のままとする
+	if(memorizingFlg == 1){
+		document.getElementById(kaminokuId).innerHTML = "上の句：";
+		document.getElementById(shimonokuId).innerHTML = "下の句：";
+		timeKeeperForMemorize();
+	// それ以外の場合
+	}else{
+		document.getElementById("stsMsg").innerHTML = "【" + (curQ + 1) + "問目】　";
+		if(document.form1.qptn.selectedIndex == 1){
+			document.getElementById("stsMsg").innerHTML += "下の句に続く上の句をクリックしてください。";
+		}else{
+			document.getElementById("stsMsg").innerHTML += "上の句に続く下の句をクリックしてください。";
+		}
+		if(sportFlg == 1){
+			document.getElementById("stsMsg").innerHTML += "<br>　※ない場合はクリックしないでください。";
+		}
+		document.getElementById(kaminokuId).innerHTML = "上の句：";
+		document.getElementById(shimonokuId).innerHTML = "下の句：";
+		kaminokuCharAt = 0;
+		shimonokuCharAt = 0;
+		answerableFlg = 1;
+		answerableOpoFlg = 1;
+
+		// 音声読み上げ
+		if(document.form1.voicesel.selectedIndex != 0){
+			voiceRead("Q");
+		}
+
+		// 対戦相手ありの場合、解答するタイミング及び正解/不正解を決定
+		if(document.form1.opo.selectedIndex != 0){
+			makeOpoPattern();
+		}
+
+		if (timerA){
+			clearInterval(timerA);
+		}
+		if(document.form1.qptn.selectedIndex == 1){
+			timerA = setInterval("showShimonoku()",globInterval);
+		}else{
+			timerA = setInterval("showKaminoku()",globInterval);
+		}
+	}
+
+	return;
+}
+
+// 相手の解答タイミング及び正解/不正解を決定
+function makeOpoPattern(){
+	// 決まり字の字数取得
+	var kimariji = tankas[arrAns[curQ]-1][2];
+	if(document.form1.qptn.selectedIndex == 1){
+		kimariji = tankas[arrAns[curQ]-1][3];
+	}
+	var kimarijiLength = kimariji.length;
+	// ※上の句の決まり字が6字の場合、7字とみなす。下の句の決まり字が8字の場合、9字とみなす。
+	if( (document.form1.qptn.selectedIndex != 1 && kimarijiLength == 6) || (document.form1.qptn.selectedIndex == 1 && kimarijiLength == 8) ){
+		kimarijiLength++;
+	}
+
+	// 解答タイミング計算
+	globOpoChar = kimarijiLength;
+	globOpoChar++;	// 反応速度を考慮し、1字分足す
+	globOpoRightFlg = 1;	// 正解で初期化
+
+	// 反応速度と正解/不正解を乱数で調整
+	var opoSeed = Math.floor(100 * Math.random());
+	var opoSeed1 = opoSeed % 24;
+	var opoSeed2 = opoSeed % 33;
+
+	if(document.form1.opo.selectedIndex == 1){
+		globOpoChar += opoSeed1;
+		if(opoSeed2 > 25){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 2){
+		globOpoChar += (opoSeed1 % 18);
+		if(opoSeed2 > 27){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 3){
+		globOpoChar += (opoSeed1 % 12);
+		if(opoSeed2 > 28){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 4){
+		globOpoChar += (opoSeed1 % 9);
+		if(opoSeed2 > 29){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 5){
+		globOpoChar += (opoSeed1 % 7);
+		if(opoSeed2 > 30){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 6){
+		globOpoChar += (opoSeed1 % 5);
+		if(opoSeed2 > 31){
+			globOpoRightFlg = 0;
+		}
+	}else if(document.form1.opo.selectedIndex == 7){
+		globOpoChar += (opoSeed1 % 3);
+		if(opoSeed2 > 31 && opoSeed1 % 2 == 0){
+			globOpoRightFlg = 0;
+		}
+	}else{
+		globOpoChar += (opoSeed1 % 2);
+		if(opoSeed2 > 31 && opoSeed1 % 4 == 0){
+			globOpoRightFlg = 0;
+		}
+	}
+	
+	// 相手が不正解の場合、お手つきの札を決定
+	if(globOpoRightFlg == 0){
+		while(1){
+			globOpoMisPos = Math.floor(globCardNum * Math.random());
+			if(sportFlg == 1){
+				globOpoMisPos += 100;
+			}
+			if(globOpoMisPos != globAnsPos){
+				break;
+			}
+		}
+	}
+
+	// 札の配置が「変わらない」の場合
+	// または、50枚位置暗記モードの場合
+	if(document.form1.position.selectedIndex == 1 || sportFlg == 1){
+		// これまでに取られた位置の場合は、お手つきにしない
+		for(var i = 0; i < curQ; i++){
+			if(globOpoMisPos == arrAnsPos[i]){
+				globOpoRightFlg = 1;
+				break;
+			}
+		}
+	}
+
+
+	
+	return;
+}
+
+// 相手の解答
+function opoAct(){
+
+	// 相手が解答不可の場合、何もしない
+	if(answerableOpoFlg == 0){
+		return;
+	}
+	// 解答チェック
+	if(globOpoRightFlg == 1){
+		// 50枚位置暗記モードで空札の場合
+		if(sportFlg == 1 && arrIsBlank[curQ]){
+			// 何もしない
+		}else{
+			// 解答不可にする
+			answerableFlg = 0;
+			answerableOpoFlg = 0;
+			document.getElementById("stsMsg").innerHTML = "<font color='#ff0000'><b>×</b></font>　相手に取られました。";
+			
+			// 得点計算
+			globOpoGet += 1;
+			document.getElementById("oget").innerHTML = globOpoGet.toString();
+			globOpoPt = globOpoGet - globOpoMis;
+			document.getElementById("opt").innerHTML = globOpoPt.toString();
+			
+			// 次の問題へ進む
+			goNextQuestion(0);
+		}
+	}else{
+		document.getElementById("stsMsg").innerHTML = "相手がお手つきしました。";
+		
+		// 札の着色
+		document.getElementById("utd" + globOpoMisPos.toString()).style.border = "5px solid #999999";
+
+		// 得点計算
+		globOpoMis += 1;
+		document.getElementById("omis").innerHTML = globOpoMis.toString();
+		globOpoPt = globOpoGet - globOpoMis;
+		document.getElementById("opt").innerHTML = globOpoPt.toString();
+		answerableOpoFlg = 0;
+		// 自分が解答不可の場合、次の問題へ進む
+		if (answerableFlg == 0){
+			goNextQuestion(0);
+		}
+	}
+	return;
+}
+
+// 上の句表示
+function showKaminoku(){
+	document.getElementById(kaminokuId).innerHTML += tankas[arrAns[curQ]-1][0].charAt(kaminokuCharAt);
+	kaminokuCharAt++;
+
+	// 対戦相手がいて、かつ、途中で上の句の字数が相手の解答タイミングを超えた場合　※下の句→上の句の場合は（上の句＋下の句）の字数で判定
+	if(document.form1.opo.selectedIndex != 0 && ( (document.form1.qptn.selectedIndex == 0 && kaminokuCharAt > globOpoChar) || (document.form1.qptn.selectedIndex == 1 && (kaminokuCharAt + shimonokuCharAt) > globOpoChar) ) ){
+		// 相手の解答
+		opoAct();
+		// 自分も相手も解答できない場合、処理終了
+		if(answerableFlg == 0 && answerableOpoFlg == 0){
+			return;
+		}
+	}
+
+	// 上の句をすべて表示し終わった場合
+	if(tankas[arrAns[curQ]-1][0].length == kaminokuCharAt){
+		if(document.form1.qptn.selectedIndex == 1){
+			if(document.form1.opo.selectedIndex == 0 && document.form1.timeLimit[0].checked) {
+				clearInterval(timerA);
+				timerA = setInterval("timeOut()",6000);
+			}else if(sportFlg == 1 && arrIsBlank[curQ]){
+				clearInterval(timerA);
+				timerA = setInterval("timeOutBlank()",6000);
+			}
+		}else{
+			clearInterval(timerA);
+			timerA = setInterval("intervalKamiAndShimo()",5000);
+		}
+	}
+	return;
+}
+
+// 上の句表示と下の句表示の間隔調整
+function intervalKamiAndShimo(){
+	// 50枚位置暗記モードで空札の場合、空札早送り時は下の句表示をスキップする
+	if(sportFlg == 1 && arrIsBlank[curQ] && document.form1.blankSkip.checked){
+		clearInterval(timerA);
+		timeOutBlank();
+		return;
+	}
+
+	// 音声読み上げ
+	if(document.form1.voicesel.selectedIndex != 0){
+		voiceRead("A");
+	}
+
+	clearInterval(timerA);
+	if(document.form1.qptn.selectedIndex == 1){
+		timerA = setInterval("showKaminoku()",globInterval);
+	}else{
+		timerA = setInterval("showShimonoku()",globInterval);
+	}
+	return;
+}
+
+// 下の句表示
+function showShimonoku(){
+	document.getElementById(shimonokuId).innerHTML += tankas[arrAns[curQ]-1][1].charAt(shimonokuCharAt);
+	shimonokuCharAt++;
+
+	// 対戦相手がいて、かつ、途中で（上の句＋下の句）の字数が相手の解答タイミングを超えた場合　※下の句→上の句の場合は下の句の字数で判定
+	if(document.form1.opo.selectedIndex != 0 && ( (document.form1.qptn.selectedIndex == 0 && (kaminokuCharAt + shimonokuCharAt) > globOpoChar) || (document.form1.qptn.selectedIndex == 1 && shimonokuCharAt > globOpoChar) ) ){
+		// 相手の解答
+		opoAct();
+		// 自分も相手も解答できない場合、処理終了
+		if(answerableFlg == 0 && answerableOpoFlg == 0){
+			return;
+		}
+	}
+
+	// 下の句をすべて表示し終わった場合
+	if(tankas[arrAns[curQ]-1][1].length == shimonokuCharAt){
+		if(document.form1.qptn.selectedIndex == 1){
+			clearInterval(timerA);
+			timerA = setInterval("intervalKamiAndShimo()",5000);
+		}else{
+			if(document.form1.opo.selectedIndex == 0 && document.form1.timeLimit[0].checked) {
+				clearInterval(timerA);
+				timerA = setInterval("timeOut()",6000);
+			}else if(sportFlg == 1 && arrIsBlank[curQ]){
+				clearInterval(timerA);
+				timerA = setInterval("timeOutBlank()",6000);
+			}
+		}
+	}
+	return;
+}
+
+// 音声読み上げ処理
+function voiceRead(qa){
+	var tmpVoiceFile = "https://bepper.jp/8to/100nin1shu/voice/";
+	if(document.form1.voicesel.selectedIndex == 1){	// 朗詠
+		tmpVoiceFile += "e";
+	}else if(document.form1.voicesel.selectedIndex == 2){	// 朗読
+		tmpVoiceFile += "d";
+	}
+//		tmpVoiceFile += (document.form1.dif.selectedIndex).toString();
+	tmpVoiceFile += "2";		//ToDo: 難易度に応じた音声ファイル作成
+
+	var tmpVoiceFileNum = 100;
+	if( (qa == "Q" && document.form1.qptn.selectedIndex == 1) || (qa == "A" && document.form1.qptn.selectedIndex == 0) ){
+		tmpVoiceFileNum += 100;
+	}
+	tmpVoiceFileNum += arrAns[curQ];
+	tmpVoiceFile += tmpVoiceFileNum.toString();
+	tmpVoiceFile += ".mp3";
+
+	if(audioFlg){
+		try{
+			audioObj.src = tmpVoiceFile;
+			audioObj.play();
+		}catch(e){
+		}
+	}else{
+		document.getElementById("voice").innerHTML = CNS_EMBED1 + tmpVoiceFile + CNS_EMBED2;
+	}
+	return;
+}
+
+// 時間切れ時処理
+function timeOut(){
+	document.getElementById("stsMsg").innerHTML = "<font color='#ff0000'><b>×</b></font>　時間切れです。";
+
+	// 得点計算
+	globYourLos += 1;
+	document.getElementById("ylos").innerHTML = globYourLos.toString();
+
+	answerableFlg = 0;
+	
+	// 次の問題へ進む
+	goNextQuestion(0);
+
+	return;
+}
+
+// 時間切れ時処理（空札時）
+function timeOutBlank(){
+	// 自分が解答可（お手つきなし）の場合
+	if(answerableFlg == 1){
+		document.getElementById("stsMsg").innerHTML = "<font color='#0000ff'><b>○</b></font>　空札です。";
+		answerableFlg = 0;
+		
+		// 次の問題へ進む
+		goNextQuestion(1);
+	// 自分が解答不可（お手つきあり）の場合
+	}else{
+		document.getElementById("stsMsg").innerHTML = "<font color='#ff0000'><b>×</b></font>　空札です。";
+		
+		// 次の問題へ進む
+		goNextQuestion(0);
+	}
+	return;
+}
+
+// 取り札クリック
+function fudaClick(pos){
+	// 開始していない場合 または 終了している場合 または 解答不可の場合、何もしない
+	if(startFlg == 0 || endFlg == 1 || answerableFlg == 0){
+		return;
+	}
+	// 札の位置が「変わらない」または50枚位置暗記モード　かつ　該当の札が既に取られている場合
+	if(document.form1.position.selectedIndex == 1 || sportFlg == 1){
+		for(var i = 0; i < curQ; i++){
+			if(arrAnsPos[i] == pos){
+				return;
+			}
+		}
+	}
+
+	// 解答チェック
+	// 正解の場合
+	if(pos == globAnsPos){
+		document.getElementById("stsMsg").innerHTML = "<font color='#0000ff'><b>○</b></font>　正解です。";
+
+		// 得点計算
+		globYourGet += 1;
+		document.getElementById("yget").innerHTML = globYourGet.toString();
+
+		// 得点計算（クエスト用）
+		if(questFlg == 1){
+			var remainSecond = 20-eachQSecond;
+			if(remainSecond < 0){
+				remainSecond = 0;
+			}
+			globQuestScore += 10*remainSecond + Math.floor(Math.pow(2,remainSecond)/10000);
+		}
+
+		if(document.form1.opo.selectedIndex != 0){
+			globYourPt = globYourGet - globYourMis;
+			document.getElementById("ypt").innerHTML = globYourPt.toString();
+		}
+		
+		answerableFlg = 0;
+		answerableOpoFlg = 0;
+
+		// 次の問題へ進む
+		goNextQuestion(1);
+
+	// 不正解の場合
+	}else{
+		document.getElementById("stsMsg").innerHTML = "<font color='#ff0000'><b>×</b></font>　不正解です。";
+		if(document.form1.opo.selectedIndex == 0){
+			document.getElementById("stsMsg").innerHTML += "お手つきは10秒加算します。";
+			document.form1.clock1.value = Math.floor(document.form1.clock1.value) + 10;
+		} else {
+			document.getElementById("stsMsg").innerHTML += "次の句までお待ちください。";
+			answerableFlg = 0;
+		}
+		// 札の着色
+		document.getElementById("utd" + pos.toString()).style.border = "5px solid #999999";
+		
+		// 得点計算
+		globYourMis += 1;
+		document.getElementById("ymis").innerHTML = globYourMis.toString();
+
+		// 得点計算（クエスト用）
+		if(questFlg == 1){
+			globQuestScore -= 100;
+		}
+
+		if(document.form1.opo.selectedIndex != 0){
+			globYourPt = globYourGet - globYourMis;
+			document.getElementById("ypt").innerHTML = globYourPt.toString();
+		}
+
+		if(document.form1.opo.selectedIndex != 0){
+			// 相手が解答不可の場合、次の問題へ進む
+			if (answerableOpoFlg == 0){
+				goNextQuestion(0);
+			}
+		}
+	}
+	return;
+}
+
+// マウスオーバー
+function mouseOverCtrl(pos,mouseSwitch){
+	// 開始していない場合 または 終了している場合 または 解答不可の場合、何もしない
+	if(startFlg == 0 || endFlg == 1 || answerableFlg == 0){
+		return;
+	}
+
+	if(mouseSwitch == 1){
+
+		var pointerFlg = true;
+		for(var i = 0; i < curQ; i++){
+			if(pos == arrAnsPos[i]){
+				pointerFlg = false;
+				break;
+			}
+		}
+		if(pointerFlg){
+			// マウスポインタを切り替える
+			document.getElementById("utd" + pos.toString()).style.cursor = "pointer";
+		}
+	}else{
+		// マウスポインタを切り替える
+		document.getElementById("utd" + pos.toString()).style.cursor = "default";
+	}
+
+	return;
+}
+
+// 次の問題へ進む
+function goNextQuestion(yourRightFlg){
+	// 1問単位のタイマーをクリア
+	if (timerA){
+		clearInterval(timerA);
+	}
+	// 読み上げ停止
+	if(document.form1.voicesel.selectedIndex != 0){
+		if(audioFlg){
+			try{
+				audioObj.currentTime = 0;
+				audioObj.pause();
+			}catch(e){
+			}
+		}else{
+			document.getElementById("voice").innerHTML = "";
+		}
+	}
+	allKamiShimoShow();		// 上の句・下の句全表示
+
+	// 正解・不正解を記録
+	cardGetStr += (arrAns[curQ].toString() + "_" + yourRightFlg);
+	if(qNum != curQ + 1){
+		cardGetStr += ",";
+	}
+
+	// 3秒後に次の問題へ進む
+	curQ++;
+	timerB = setInterval("makeQuestion()",3000);
+}
+
+// 上の句・下の句全表示
+// 注）決まり字は赤で表示する
+function allKamiShimoShow(){
+	// 決まり字の字数取得（上の句）
+	// ※決まり字（上の句）が6字の場合、7字とみなす
+	var kimarijiLen = tankas[arrAns[curQ]-1][2].length;
+	if(kimarijiLen == 6){
+		kimarijiLen++;
+	}
+	// 下の句→上の句の場合、決まり字（上の句）は0字とみなす
+	if(document.form1.qptn.selectedIndex == 1){
+		kimarijiLen = 0;
+	}
+	
+	// 決まり字の字数取得（下の句）
+	// ※決まり字（下の句）が8字の場合、9字とみなす
+	var kimarijiLenShimo = tankas[arrAns[curQ]-1][3].length;
+	if(kimarijiLenShimo == 8){
+		kimarijiLenShimo++;
+	}
+	// 上の句→下の句の場合、決まり字（下の句）は0字とみなす
+	if(document.form1.qptn.selectedIndex != 1 || sportFlg == 1){
+		kimarijiLenShimo = 0;
+	}
+	
+	document.getElementById(kaminokuId).innerHTML = "上の句：<span style='color:#ff0000;'>" + tankas[arrAns[curQ]-1][0].substring(0, kimarijiLen) + "</span>" + tankas[arrAns[curQ]-1][0].substring(kimarijiLen);
+	document.getElementById(shimonokuId).innerHTML = "下の句：<span style='color:#ff0000;'>" + tankas[arrAns[curQ]-1][1].substring(0, kimarijiLenShimo) + "</span>" + tankas[arrAns[curQ]-1][1].substring(kimarijiLenShimo);
+	// 札の着色
+	if(sportFlg == 1){
+		if(globAnsPos != -1){
+			document.getElementById("utd" + globAnsPos.toString()).style.border = "5px solid #ff0000";
+		}
+	}else{
+		document.getElementById("utd" + globAnsPos.toString()).style.border = "5px solid #ff0000";
+	}
+	return;
+}
+
+
+// 時間計測
+function timeKeeper(){
+	Clock1 = Math.floor(document.form1.clock1.value)+1;
+	document.getElementById("clock").innerHTML = Clock1;
+	document.form1.clock1.value = Clock1;
+	if(endFlg == 0){
+		timerK = setTimeout('timeKeeper()', 1000);
+	}
+	return;
+}
+
+// 時間計測（各問ごと）
+function timeKeeperEachQ(){
+	if(endFlg == 0 && answerableFlg == 1){
+		eachQSecond++;
+		timerL = setTimeout('timeKeeperEachQ()', 1000);
+	}
+	return;
+}
+
+// 時間計測（暗記用）
+function timeKeeperForMemorize(){
+	ClockM = Math.floor(document.form1.clockM.value)-1;
+	var tmpMemorizeRemainMin = Math.floor(ClockM / 60);
+	var tmpMemorizeRemainSec = ClockM - (tmpMemorizeRemainMin * 60);
+	document.form1.clockM.value = ClockM;
+	document.getElementById("stsMsg").innerHTML = "札配置を暗記中…　あと";
+	if(tmpMemorizeRemainMin > 0){
+		document.getElementById("stsMsg").innerHTML += tmpMemorizeRemainMin + "分";
+	}
+	document.getElementById("stsMsg").innerHTML += tmpMemorizeRemainSec + "秒";
+	if(endFlg == 0 && memorizingFlg == 1){
+		if(ClockM > 0){
+			timerM = setTimeout('timeKeeperForMemorize()', 1000);
+		}else{
+			memorizingFlg = 0;
+			timerM = setTimeout('makeQuestion()', 1000);
+		}
+	}
+	return;
+}
+
+// モード選択
+function changeSetMode(setMode){
+	// 自由設定
+	if(setMode == 1){
+		document.getElementById("utamain").style.display = "block";
+		document.getElementById("uta50").style.display = "none";
+		document.getElementById("setFreeArea1").style.display = "";
+		document.getElementById("setFreeArea2").style.display = "";
+		document.getElementById("setFreeArea3").style.display = "";
+		document.getElementById("setFreeArea4").style.display = "";
+		document.getElementById("setFreeArea5").style.display = "";
+		document.getElementById("blankSkipArea").style.display = "none";
+		document.form1.memotime.value = 1;
+		freeFlg = 1;
+		questFlg = 0;
+		sportFlg = 0;
+		
+	// クエスト
+	}else if(setMode == 2){
+		document.getElementById("utamain").style.display = "block";
+		document.getElementById("uta50").style.display = "none";
+		document.getElementById("setFreeArea1").style.display = "none";
+		document.getElementById("setFreeArea2").style.display = "none";
+		document.getElementById("setFreeArea3").style.display = "none";
+		document.getElementById("setFreeArea4").style.display = "none";
+		document.getElementById("setFreeArea5").style.display = "none";
+		document.getElementById("blankSkipArea").style.display = "none";
+		document.getElementById("setQuestArea").style.display = "";
+		freeFlg = 0;
+		questFlg = 1;
+		sportFlg = 0;
+		
+		// クエストプルダウン生成
+		makeSelQuest();
+	// 50枚位置暗記
+	}else{
+		document.getElementById("utamain").style.display = "none";
+		document.getElementById("uta50").style.display = "block";
+		document.getElementById("setFreeArea1").style.display = "";
+		document.getElementById("setFreeArea2").style.display = "none";
+		document.getElementById("setFreeArea3").style.display = "none";
+		document.getElementById("setFreeArea4").style.display = "none";
+		document.getElementById("setFreeArea5").style.display = "";
+		document.getElementById("blankSkipArea").style.display = "block";
+		document.getElementById("setQuestArea").style.display = "none";
+		document.form1.memotime.value = 300;
+		freeFlg = 0;
+		questFlg = 0;
+		sportFlg = 1;
+		
+		document.getElementById("expQuest").innerHTML = "";
+	}
+
+	// 画像先読み（残り）＆チェック
+	preLoadExtraImages();
+	checkPreLoadImages();
+
+	return;
+}
+
+
+// 対戦相手選択
+function changeOpo(){
+	switch(document.form1.opo.selectedIndex){
+		//対戦相手なし
+		case 0:
+			document.getElementById("yourName").style.display = "none";
+			document.getElementById("yourLevel").style.display = "none";
+			document.getElementById("yourPt").style.display = "none";
+			document.getElementById("yourTime").style.display = "block";
+			document.getElementById("yourGet").style.display = "none";
+			document.getElementById("yourLos").style.display = "none";
+			document.getElementById("yourMis").style.display = "none";
+			document.getElementById("opoName").style.display = "none";
+			document.getElementById("opoLevel").style.display = "none";
+			document.getElementById("opoPt").style.display = "none";
+			document.getElementById("opoGet").style.display = "none";
+			document.getElementById("opoMis").style.display = "none";
+			document.getElementById("timeLimitArea").style.display = "block";
+			break;
+		//対戦相手あり（共通処理）
+		default:
+			document.getElementById("yourName").style.display = "block";
+			document.getElementById("yourLevel").style.display = "block";
+			document.getElementById("yourPt").style.display = "block";
+			document.getElementById("yourTime").style.display = "none";
+			document.getElementById("yourGet").style.display = "none";
+			document.getElementById("yourLos").style.display = "none";
+			document.getElementById("yourMis").style.display = "none";
+			document.getElementById("opoName").style.display = "block";
+			document.getElementById("opoLevel").style.display = "block";
+			document.getElementById("opoPt").style.display = "block";
+			document.getElementById("opoGet").style.display = "none";
+			document.getElementById("opoMis").style.display = "none";
+			document.getElementById("timeLimitArea").style.display = "none";
+			
+			document.getElementById("opoName").innerHTML = "<span style=\"color:" + arrOpoColor[document.form1.opo.selectedIndex - 1] + ";\">■</span>" + arrOpoList[document.form1.opo.selectedIndex - 1];
+			globOpoLevel = arrOpoLevelList[document.form1.opo.selectedIndex - 1];
+			document.getElementById("opoLevel").innerHTML = "　レベル" + globOpoLevel.toString();
+	}
+	return;
+}
+
+// 難易度選択
+function changeDif(){
+	switch(document.form1.dif.selectedIndex){
+		case 0:
+			document.getElementById("tbl1").style.display = "";
+			document.getElementById("tbl2").style.display = "none";
+			document.getElementById("tbl3").style.display = "none";
+			if(document.form1.position.selectedIndex == 1) document.form1.numQ.value = "3";
+			break;
+		case 1:
+			document.getElementById("tbl1").style.display = "";
+			document.getElementById("tbl2").style.display = "";
+			document.getElementById("tbl3").style.display = "none";
+			if(document.form1.position.selectedIndex == 1) document.form1.numQ.value = "5";
+			break;
+		case 2:
+			document.getElementById("tbl1").style.display = "";
+			document.getElementById("tbl2").style.display = "";
+			document.getElementById("tbl3").style.display = "";
+			if(document.form1.position.selectedIndex == 1) document.form1.numQ.value = "7";
+			break;
+	}
+	return;
+}
+
+// 出題形式選択
+// 引数　bDetResetFlg：決まり字数の範囲リセット（出題形式の変更時はリセットする。リセットボタン押下時はリセットしない）
+function changeQptn(bDetResetFlg){
+	switch(document.form1.qptn.selectedIndex){
+		case 0:
+			kaminokuId = CNS_KU1;
+			shimonokuId = CNS_KU2;
+			if(bDetResetFlg){
+				document.form1.numDetMin.value = "1";
+				document.form1.numDetMax.value = "6";
+			}
+			break;
+		case 1:
+			kaminokuId = CNS_KU2;
+			shimonokuId = CNS_KU1;
+			if(bDetResetFlg){
+				document.form1.numDetMin.value = "1";
+				document.form1.numDetMax.value = "8";
+			}
+			break;
+	}
+	document.getElementById(kaminokuId).innerHTML = "上の句：";
+	document.getElementById(shimonokuId).innerHTML = "下の句：";
+
+	// 画像先読み（残り）＆チェック
+	preLoadExtraImages();
+	checkPreLoadImages();
+
+	return;
+}
+
+// 札の向き選択
+function changeDirection() {
+	// 画像先読み（残り）＆チェック
+	preLoadExtraImages();
+	checkPreLoadImages();
+
+	return;
+}
+
+// 音声読み上げ選択
+function changeVoiceSel(){
+	switch(document.form1.voicesel.selectedIndex){
+		case 0:
+			// 読み上げクリア
+			document.getElementById("voice").innerHTML = "";
+			break;
+		default:
+			// ダミー音声（無音）を流す　※読み上げを選択した時点でプラグイン許可をうながすため
+			if(audioFlg){
+				audioObj.src = "https://bepper.jp/8to/100nin1shu/voice/dummy.mp3";
+				audioObj.play();
+			}else{
+				document.getElementById("voice").innerHTML = CNS_EMBED1 + "https://bepper.jp/8to/100nin1shu/voice/dummy.mp3" + CNS_EMBED2;
+			}
+	}
+	return;
+}
+
+// 配列の順番シャッフル
+function shuffleNum() {
+	var i = shuffleNumbers.length;
+	while(i){
+		var j = Math.floor(Math.random() * i);
+		var tmp = shuffleNumbers[--i];
+		shuffleNumbers[i] = shuffleNumbers[j];
+		shuffleNumbers[j] = tmp;
+	}
+	return;
+}
+
+// 配列の順番初期化
+function defaultNum(){
+	for(var i = 0; i < CNS_100; i++){
+		shuffleNumbers[i] = i + 1;	//百人一首一覧とロジックが異なるため注意
+	}
+	return;
+}
+
+// 画面ロック設定
+function changeLock(bLockFlg){
+	document.form1.startButton.disabled = bLockFlg;
+	document.form1.numBegin.disabled = bLockFlg;
+	document.form1.numEnd.disabled = bLockFlg;
+	document.form1.numQ.disabled = bLockFlg;
+	document.form1.numDetMin.disabled = bLockFlg;
+	document.form1.numDetMax.disabled = bLockFlg;
+	document.form1.opo.disabled = bLockFlg;
+	document.form1.dif.disabled = bLockFlg;
+	document.form1.qptn.disabled = bLockFlg;
+	document.form1.timeLimit[0].disabled = bLockFlg;
+	document.form1.timeLimit[1].disabled = bLockFlg;
+	document.form1.position.disabled = bLockFlg;
+	document.form1.direction.disabled = bLockFlg;
+	document.form1.order.disabled = bLockFlg;
+	document.form1.voicesel.disabled = bLockFlg;
+	document.form1.memotime.disabled = bLockFlg;
+	document.form1.blankSkip.disabled = bLockFlg;
+	
+	return;
+}
+
+// スコア・表示初期化
+function initScore(){
+	document.getElementById("clock").innerHTML = "0";
+	document.form1.clock1.value = 0;
+	document.form1.clockM.value = 300;
+	globYourPt = 0;
+	document.getElementById("ypt").innerHTML = "0";
+	globYourGet = 0;
+	document.getElementById("yget").innerHTML = "0";
+	globYourLos = 0;
+	document.getElementById("ylos").innerHTML = "0";
+	globYourMis = 0;
+	document.getElementById("ymis").innerHTML = "0";
+	globOpoPt = 0;
+	document.getElementById("opt").innerHTML = "0";
+	globOpoGet = 0;
+	document.getElementById("oget").innerHTML = "0";
+	globOpoMis = 0;
+	document.getElementById("omis").innerHTML = "0";
+	
+	var tmpYourLevelStr = "不明";
+	if(globYourLevel > 0 && globYourLevel < 9){
+		tmpYourLevelStr = globYourLevel.toString();
+	}
+	document.getElementById("yourLevel").innerHTML = "　レベル" + tmpYourLevelStr;
+
+	cardGetStr = "";
+	avrTime = 0;
+	globQuestScore = 0;
+
+	return;
+}
+
+// 対戦成績登録処理
+function sendScore(){
+	var strClmode = "3";
+	var strMyScore = "";
+	var strCpScore = "";
+	var strAvrTime = "";
+	
+	// 対戦相手なしの場合
+	if(document.form1.opo.selectedIndex == 0){
+		strMyScore = qNum.toString();
+		strAvrTime = avrTime.toString();
+	// 対戦相手ありの場合
+	} else {
+		strMyScore = globYourPt.toString();
+		strCpScore = globOpoPt.toString();
+	}
+	
+	var strOpoCd = document.form1.opo.value;
+	var strQPtn = document.form1.qptn.selectedIndex;
+	var strVoiceSel = document.form1.voicesel.selectedIndex;
+	
+	var strQuestNo = "";
+	var strQuestResult = "";
+	var strQuestScore = "";
+	// クエストありの場合
+	if(questFlg == 1 && arrQuestIdx >= 0){
+		strQuestNo = arrQuest[arrQuestIdx][0];
+		strQuestResult = arrQuestResult;
+		strQuestScore = globQuestScore.toString();
+	}
+
+	ajax.onreadystatechange = handleAjaxResponse2;
+	ajax.open('POST', '100nin1shuAjax.cgi', true);
+	ajax.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	ajax.send('mode=C&player2=' + encodeURI(strOpoCd) + '&clmode=' + encodeURI(strClmode) + '&myscore=' + encodeURI(strMyScore) + '&cpscore=' + encodeURI(strCpScore) + '&qptn=' + encodeURI(strQPtn) + '&cardgetstr=' + encodeURI(cardGetStr) + '&voicesel=' + encodeURI(strVoiceSel) + '&avrtime=' + encodeURI(strAvrTime) + '&questno=' + encodeURI(strQuestNo) + '&questresult=' + encodeURI(strQuestResult) + '&questscore=' + encodeURI(strQuestScore));
+}
+
+// 対戦成績登録後のクエスト順位取得(Ajaxレスポンス)
+function handleAjaxResponse2(){
+	if (ajax.readyState == 4 && ajax.status == 200) {
+		var xmlDc = ajax.responseXML;
+		var monthlyMyRank = "";
+		var monthlyTotal = "";
+		try{
+			var items = xmlDc.getElementsByTagName('rankinfo');
+			for(var i = 0; i < items.length; i++){
+				monthlyMyRank = items[i].getElementsByTagName('myrank')[0].firstChild.nodeValue;
+				monthlyTotal = items[i].getElementsByTagName('total')[0].firstChild.nodeValue;
+				if(monthlyMyRank != "" && monthlyTotal != ""){
+					document.getElementById("stsMsg").innerHTML += ("　月間<b>" + monthlyMyRank + "</b>位/" + monthlyTotal + "人");
+				}
+			}
+		}catch(e){
+		}
+	}
+}
+
+function createHttpRequest(){
+	if(window.ActiveXObject){
+		try{
+			return new ActiveXObject("Msxml2.XMLHTTP");
+		}catch(e){
+			try{
+				return new ActiveXObject("Microsoft.XMLHTTP");
+			}catch(e2){
+				return null;
+			}
+		}
+	}else if(window.XMLHttpRequest){
+		return new XMLHttpRequest();
+	}else{
+		return null;
+	}
+}
+//-->
+</script>
+
+<style type="text/css">
+<!--
+body{
+	background-color:#ddffdd;
+	color:#000000;
+	margin:0px;
+	padding:0px;
+	font-size:14px;
+	line-height:19px;
+	word-wrap:break-word;
+	font-family:'ヒラギノ角ゴ Pro W3','Hiragino Kaku Gothic Pro','メイリオ',Meiryo,'ＭＳ Ｐゴシック',sans-serif;
+}
+h2{background-color:#ccccff;
+   font-size:20px;
+   font-family:"HG教科書体","HG明朝E";
+   font-weight:bolder;
+   border-width:0 3px 5px 0;
+   border-style:ridge;
+   border-color:#6666ff;
+   color:#000000;
+   padding:2px 10px 0 4px;
+   height:auto;
+   margin-top:5px;
+   margin-bottom:5px;
+}
+td{font-size:13px}
+.utatd {width:105px; height:125px; margin: 2px; padding:0px; border:5px solid #ddffdd;}
+.utaimg {width:105px; height:125px; border-width: 0px;}
+.utatd_sp {width:84px; height:100px; margin: 2px; padding:0px; border:5px solid #ddffdd;}
+.utaimg_sp {width:84px; height:100px; border-width: 0px;}
+.utatd_50 {width:63px; height:75px; margin: 2px; padding:0px; border:5px solid #ddffdd;}
+.utaimg_50 {width:63px; height:75px; border-width: 0px;}
+.df {font-size:13px;}
+.setting {vertical-align:top;}
+.setmodediv {margin:0px;}
+.setmodediv input{display: none;}
+.setmodediv label{
+	display: block;
+	float: left;
+	cursor: pointer;
+#	width: 80px;
+	margin: 0px;
+	padding: 8px 5px;
+	border-right: 1px solid #99aa88;
+	background: #bbcc99;
+	color: #555566;
+	font-size: 13px;
+	text-align: center;
+	line-height: 1;
+	transition: .1s;
+}
+.setmodediv label:first-of-type{
+	border-radius: 3px 0 0 3px;
+}
+.setmodediv label:last-of-type{
+	border-right: 0px;
+	border-radius: 0 3px 3px 0;
+}
+.setmodediv input[type="radio"]:checked + label {
+	background-color: #99bb11;
+	color: #ffffff;
+}
+-->
+</style>
+</head>
+<body onUnload="setSettings();">
+<script type="text/javascript" src="https://www.8toch.net/aa/welcome.js"></script>
+<table summary="" width="320">
+<tr>
+<td width="320" valign="top">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6617889486958649"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:inline-block;width:320px;height:50px"
+     data-ad-client="ca-pub-6617889486958649"
+     data-ad-slot="4150226941"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+<br><form name="form1">
+<div id="navipart">
+<h2>百人一首練習用</h2>
+あるサイトをベースに作ったサイトです。<br>コンピュータと対戦もできます。<br>
+
+<br>
+</div>
+<div style="font-size:13px; line-height:17px">
+</div>
+<br>
+
+</div>
+<br>
+<input type="hidden" name="clock1">
+<input type="hidden" name="clockM">
+<table summary="設定" style="background-color:#ddccff;">
+<tr id="setFreeArea1">
+<td 
+class="setting">
+【設定】　
+</td>
+</tr><tr>
+<td class="setting">
+対戦相手 <select name="opo" onchange="javascript:changeOpo();">
+	<option value="" selected>なし
+<option value="01" style="color:#009933;">【レベル1】 べっぷライム<option value="02" style="color:#330066;">【レベル2】 はまわきパープル<option value="03" style="color:#000099;">【レベル3】 かんかいじブルー<option value="04" style="color:#ff6600;">【レベル4】 ほりたオレンジ<option value="05" style="color:#999900;">【レベル5】 みょうばんイエロー<option value="06" style="color:#663300;">【レベル6】 かんなわブラウン<option value="07" style="color:#ff3366;">【レベル7】 しばせきピンク<option value="08" style="color:#006600;">【レベル8】 かめがわグリーン</select>
+</td>
+</tr><tr>
+<td class="setting" id="voiceTd">
+音声読み上げ <select name="voicesel" onchange="javascript:changeVoiceSel();">
+	<option selected>なし
+	<option>あり（朗詠）
+	<option>あり（朗読）
+</select>
+</td>
+<td class="setting" id="nonVoiceTd" style="display:none;">
+音声読み上げ　<span style="color:#0000ff;">お使いのブラウザは対応していません。</span>
+</select>
+</td>
+</tr>
+<tr id="setFreeArea2">
+<td class="setting">
+問題数 <input type="tel" name="numQ" size="3" value="10" maxLength="3" style="ime-mode:disabled;">
+　歌番号範囲 <input type="tel" name="numBegin" size="3" value="1" maxLength="3" style="ime-mode:disabled;">～<input type="tel" name="numEnd" size="3" value="100" maxLength="3" style="ime-mode:disabled;">
+</td>
+</tr><tr>
+<td class="setting">
+決まり字数範囲 <input type="tel" name="numDetMin" size="3" value="1" maxLength="1" style="ime-mode:disabled;">～<input type="tel" name="numDetMax" size="3" value="6" maxLength="1" style="ime-mode:disabled;">
+</td>
+</tr>
+<tr id="setFreeArea3">
+<td class="setting">
+出題形式  <select name="qptn" onchange="javascript:changeQptn(true);">
+	<option selected>上の句から下の句を当てる
+	<option>下の句から上の句を当てる
+</select>
+</td>
+</tr>
+<tr>
+<td class="setting">
+難易度 <select name="dif" onchange="javascript:changeDif();">
+	<option>かんたん
+	<option selected>ふつう
+	<option>むずかしい
+</select>
+</td>
+</tr><tr>
+<td class="setting">
+<span id="timeLimitArea">
+時間制限 
+<input type="radio" id="timeLimitY" name="timeLimit" value="Y" checked /> <label for="timeLimitY">あり</label>
+ <input type="radio" id="timeLimitN" name="timeLimit" value="N" /> <label for="timeLimitN">なし</label>
+</span>
+</td>
+</tr>
+<tr id="setFreeArea4">
+<td class="setting">
+札の配置 <select name="position">
+	<option selected>毎回変わる
+	<option>変わらない
+</select>
+</td>
+</tr>
+<tr>
+<td class="setting">
+札の向き <select name="direction" onchange="javascript:changeDirection();">
+	<option selected>すべて自分の向き
+	<option>半分が自分の向き
+	<option>すべて相手の向き
+</select>
+</td>
+</tr><tr>
+<td class="setting">
+出題順 <select name="order">
+	<option selected>ランダム
+	<option>歌番号順
+</select>
+</td>
+</tr>
+<tr id="setFreeArea5">
+<td class="setting">
+暗記時間 <select name="memotime">
+	<option value="1">なし
+	<option value="30">30秒
+	<option value="60" selected>1分
+	<option value="120">2分
+	<option value="180">3分
+	<option value="240">4分
+	<option value="300">5分
+	<option value="600">10分
+	<option value="900">15分
+</select>
+</td>
+</tr><tr>
+<td class="setting">
+<span id="blankSkipArea" style="display:none;">
+　<input type="checkbox" id="blankSkip" name="blankSkip" value="1" /> <label for="blankSkip">空札早送り</label>
+</span>
+</td>
+</tr>
+</table>
+</div>
+<br>
+<!-- さらに外側のテーブル Start-->
+<table style="width:300px;">
+<tr>
+<td style="vertical-align:top; width:300px;">
+
+<!-- 外側のテーブル Start-->
+<table style="width:300px;">
+<tr>
+<td style="vertical-align:top; width:300px;" 
+colspan="2"
+>
+<div id="buttonArea">
+<input id="startButton" type="button" name="startB" value="　スタート　" disabled onclick="javascript:startGame();">
+　　<input id="resetButton" type="button" name="resetB" value="　リセット　" disabled onclick="javascript:resetGame();">
+</div>
+<table style="width:300px;">
+<tr>
+<td style="vertical-align:top; width:300px; background-color: #eeffaa;">
+<span id="stsMsg" style="width:300px; font-size:10px; padding-left:5px;">JavaScriptを有効にしてください。</span><br>
+<span id="ku1" style="width:300px; font-size:11px; padding-left:5px; font-weight:bolder;"></span><br>
+<span id="ku2" style="width:300px; font-size:11px; padding-left:5px; font-weight:bolder; color:#990000;"></span><br>
+</td>
+</tr>
+</table>
+</td>
+</tr><tr>
+<!-- 中央のセル：あなたの成績 -->
+<td style="vertical-align:top; width:120px;">
+<div id="yourName" style="font-size:12px; line-height:20px; font-weight:bolder; display:none;"><span style="color:#ff0000;">■</span>あなた</div>
+<div id="yourLevel" style="font-size:12px; line-height:20px; display:none;">　レベル不明</div>
+<div id="yourPt" style="width:115px; background-color: #ffcccc; font-size:17px; line-height:20px; color:#000000; font-weight:bolder; display:none;">
+ 得点: <span id="ypt" style="color:#cc0000;font-weight:bolder;">0</span></div>
+<div id="yourTime" style="width:115px; background-color: #ffcccc; font-size:13px; line-height:20px; color:#000000;">
+　時間: <span id="clock" style="color:#cc0000;font-weight:bolder;">0</span> 秒</div>
+<div id="yourGet" style="width:115px; background-color: #ffcccc; font-size:13px; line-height:20px; color:#000000;">
+　取り札: <span id="yget" style="color:#cc0000;font-weight:bolder;">0</span> 枚</div>
+<div id="yourLos" style="width:115px; background-color: #ffcccc; font-size:13px; line-height:20px; color:#000000;">
+　時間切れ: <span id="ylos" style="color:#cc0000;font-weight:bolder;">0</span> 枚</div>
+<div id="yourMis" style="width:115px; background-color: #ffcccc; font-size:13px; line-height:20px; color:#000000;">
+　お手つき: <span id="ymis" style="color:#cc0000;font-weight:bolder;">0</span> 回</div>
+</td>
+<!-- 右側のセル：時間制限 か 対戦相手の成績 -->
+<td style="vertical-align:top; width:120px;">
+<div id="opoName" style="font-size:12px; line-height:20px; font-weight:bolder; display:none;">■相手</div>
+<div id="opoLevel" style="font-size:12px; line-height:20px; display:none;">　レベル不明</div>
+<div id="opoPt" style="width:115px; background-color: #ccddff; font-size:17px; line-height:20px; color:#000000; font-weight:bolder; display:none;">
+ 得点: <span id="opt" style="color:#cc0000;font-weight:bolder;">0</span></div>
+<div id="opoGet" style="width:115px; background-color: #ccddff; font-size:13px; line-height:20px; color:#000000; display:none;">
+　取り札: <span id="oget" style="color:#cc0000;font-weight:bolder;">0</span> 枚</div>
+<div id="opoMis" style="width:115px; background-color: #ccddff; font-size:13px; line-height:20px; color:#000000; display:none;">
+　お手つき: <span id="omis" style="color:#cc0000;font-weight:bolder;">0</span> 回</div>
+</td>
+</tr>
+</table>
+<!-- 外側のテーブル End-->
+<br>
+<table id="utamain">
+<tr id="tbl1" >
+<td class="utatd_sp" id="utd0" onmouseover="mouseOverCtrl(0, 1);" onmouseout="mouseOverCtrl(0, 0);" onclick="fudaClick(0);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos0"></td>
+<td class="utatd_sp" id="utd1" onmouseover="mouseOverCtrl(1, 1);" onmouseout="mouseOverCtrl(1, 0);" onclick="fudaClick(1);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos1"></td>
+<td class="utatd_sp" id="utd2" onmouseover="mouseOverCtrl(2, 1);" onmouseout="mouseOverCtrl(2, 0);" onclick="fudaClick(2);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos2"></td>
+</tr>
+<tr id="tbl2" >
+<td class="utatd_sp" id="utd3" onmouseover="mouseOverCtrl(3, 1);" onmouseout="mouseOverCtrl(3, 0);" onclick="fudaClick(3);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos3"></td>
+<td class="utatd_sp" id="utd4" onmouseover="mouseOverCtrl(4, 1);" onmouseout="mouseOverCtrl(4, 0);" onclick="fudaClick(4);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos4"></td>
+<td class="utatd_sp" id="utd5" onmouseover="mouseOverCtrl(5, 1);" onmouseout="mouseOverCtrl(5, 0);" onclick="fudaClick(5);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos5"></td>
+</tr>
+<tr id="tbl3" style="display:none;">
+<td class="utatd_sp" id="utd6" onmouseover="mouseOverCtrl(6, 1);" onmouseout="mouseOverCtrl(6, 0);" onclick="fudaClick(6);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos6"></td>
+<td class="utatd_sp" id="utd7" onmouseover="mouseOverCtrl(7, 1);" onmouseout="mouseOverCtrl(7, 0);" onclick="fudaClick(7);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos7"></td>
+<td class="utatd_sp" id="utd8" onmouseover="mouseOverCtrl(8, 1);" onmouseout="mouseOverCtrl(8, 0);" onclick="fudaClick(8);"><img class="utaimg_sp" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos8"></td>
+</tr>
+</table>
+<table id="uta50" style="display:none;width:680px;">
+<tr id="tbl50_1">
+<td class="utatd_50" id="utd100" onmouseover="mouseOverCtrl(100, 1);" onmouseout="mouseOverCtrl(100, 0);" onclick="fudaClick(100);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos100"></td>
+<td class="utatd_50" id="utd101" onmouseover="mouseOverCtrl(101, 1);" onmouseout="mouseOverCtrl(101, 0);" onclick="fudaClick(101);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos101"></td>
+<td class="utatd_50" id="utd102" onmouseover="mouseOverCtrl(102, 1);" onmouseout="mouseOverCtrl(102, 0);" onclick="fudaClick(102);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos102"></td>
+<td class="utatd_50" id="utd103" onmouseover="mouseOverCtrl(103, 1);" onmouseout="mouseOverCtrl(103, 0);" onclick="fudaClick(103);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos103"></td>
+<td class="utatd_50" id="utd104" onmouseover="mouseOverCtrl(104, 1);" onmouseout="mouseOverCtrl(104, 0);" onclick="fudaClick(104);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos104"></td>
+<td class="utatd_50" id="utd105" onmouseover="mouseOverCtrl(105, 1);" onmouseout="mouseOverCtrl(105, 0);" onclick="fudaClick(105);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos105"></td>
+<td class="utatd_50" id="utd106" onmouseover="mouseOverCtrl(106, 1);" onmouseout="mouseOverCtrl(106, 0);" onclick="fudaClick(106);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos106"></td>
+<td class="utatd_50" id="utd107" onmouseover="mouseOverCtrl(107, 1);" onmouseout="mouseOverCtrl(107, 0);" onclick="fudaClick(107);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos107"></td>
+<td class="utatd_50" id="utd108" onmouseover="mouseOverCtrl(108, 1);" onmouseout="mouseOverCtrl(108, 0);" onclick="fudaClick(108);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos108"></td>
+</tr>
+<tr id="tbl50_2">
+<td class="utatd_50" id="utd109" onmouseover="mouseOverCtrl(109, 1);" onmouseout="mouseOverCtrl(109, 0);" onclick="fudaClick(109);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos109"></td>
+<td class="utatd_50" id="utd110" onmouseover="mouseOverCtrl(110, 1);" onmouseout="mouseOverCtrl(110, 0);" onclick="fudaClick(110);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos110"></td>
+<td class="utatd_50" id="utd111" onmouseover="mouseOverCtrl(111, 1);" onmouseout="mouseOverCtrl(111, 0);" onclick="fudaClick(111);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos111"></td>
+<td class="utatd_50" id="utd112" onmouseover="mouseOverCtrl(112, 1);" onmouseout="mouseOverCtrl(112, 0);" onclick="fudaClick(112);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos112"></td>
+<td class="utatd_50"></td>
+<td class="utatd_50" id="utd113" onmouseover="mouseOverCtrl(113, 1);" onmouseout="mouseOverCtrl(113, 0);" onclick="fudaClick(113);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos113"></td>
+<td class="utatd_50" id="utd114" onmouseover="mouseOverCtrl(114, 1);" onmouseout="mouseOverCtrl(114, 0);" onclick="fudaClick(114);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos114"></td>
+<td class="utatd_50" id="utd115" onmouseover="mouseOverCtrl(115, 1);" onmouseout="mouseOverCtrl(115, 0);" onclick="fudaClick(115);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos115"></td>
+<td class="utatd_50" id="utd116" onmouseover="mouseOverCtrl(116, 1);" onmouseout="mouseOverCtrl(116, 0);" onclick="fudaClick(116);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos116"></td>
+</tr>
+<tr id="tbl50_3">
+<td class="utatd_50" id="utd117" onmouseover="mouseOverCtrl(117, 1);" onmouseout="mouseOverCtrl(117, 0);" onclick="fudaClick(117);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos117"></td>
+<td class="utatd_50" id="utd118" onmouseover="mouseOverCtrl(118, 1);" onmouseout="mouseOverCtrl(118, 0);" onclick="fudaClick(118);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos118"></td>
+<td class="utatd_50" id="utd119" onmouseover="mouseOverCtrl(119, 1);" onmouseout="mouseOverCtrl(119, 0);" onclick="fudaClick(119);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos119"></td>
+<td class="utatd_50" id="utd120" onmouseover="mouseOverCtrl(120, 1);" onmouseout="mouseOverCtrl(120, 0);" onclick="fudaClick(120);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos120"></td>
+<td class="utatd_50"></td>
+<td class="utatd_50" id="utd121" onmouseover="mouseOverCtrl(121, 1);" onmouseout="mouseOverCtrl(121, 0);" onclick="fudaClick(121);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos121"></td>
+<td class="utatd_50" id="utd122" onmouseover="mouseOverCtrl(122, 1);" onmouseout="mouseOverCtrl(122, 0);" onclick="fudaClick(122);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos122"></td>
+<td class="utatd_50" id="utd123" onmouseover="mouseOverCtrl(123, 1);" onmouseout="mouseOverCtrl(123, 0);" onclick="fudaClick(123);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos123"></td>
+<td class="utatd_50" id="utd124" onmouseover="mouseOverCtrl(124, 1);" onmouseout="mouseOverCtrl(124, 0);" onclick="fudaClick(124);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos124"></td>
+</tr>
+<tr id="tbl50_4">
+<td class="utatd_50" id="utd125" onmouseover="mouseOverCtrl(125, 1);" onmouseout="mouseOverCtrl(125, 0);" onclick="fudaClick(125);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos125"></td>
+<td class="utatd_50" id="utd126" onmouseover="mouseOverCtrl(126, 1);" onmouseout="mouseOverCtrl(126, 0);" onclick="fudaClick(126);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos126"></td>
+<td class="utatd_50" id="utd127" onmouseover="mouseOverCtrl(127, 1);" onmouseout="mouseOverCtrl(127, 0);" onclick="fudaClick(127);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos127"></td>
+<td class="utatd_50" id="utd128" onmouseover="mouseOverCtrl(128, 1);" onmouseout="mouseOverCtrl(128, 0);" onclick="fudaClick(128);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos128"></td>
+<td class="utatd_50"></td>
+<td class="utatd_50" id="utd129" onmouseover="mouseOverCtrl(129, 1);" onmouseout="mouseOverCtrl(129, 0);" onclick="fudaClick(129);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos129"></td>
+<td class="utatd_50" id="utd130" onmouseover="mouseOverCtrl(130, 1);" onmouseout="mouseOverCtrl(130, 0);" onclick="fudaClick(130);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos130"></td>
+<td class="utatd_50" id="utd131" onmouseover="mouseOverCtrl(131, 1);" onmouseout="mouseOverCtrl(131, 0);" onclick="fudaClick(131);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos131"></td>
+<td class="utatd_50" id="utd132" onmouseover="mouseOverCtrl(132, 1);" onmouseout="mouseOverCtrl(132, 0);" onclick="fudaClick(132);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos132"></td>
+</tr>
+<tr id="tbl50_5">
+<td class="utatd_50" id="utd133" onmouseover="mouseOverCtrl(133, 1);" onmouseout="mouseOverCtrl(133, 0);" onclick="fudaClick(133);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos133"></td>
+<td class="utatd_50" id="utd134" onmouseover="mouseOverCtrl(134, 1);" onmouseout="mouseOverCtrl(134, 0);" onclick="fudaClick(134);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos134"></td>
+<td class="utatd_50" id="utd135" onmouseover="mouseOverCtrl(135, 1);" onmouseout="mouseOverCtrl(135, 0);" onclick="fudaClick(135);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos135"></td>
+<td class="utatd_50" id="utd136" onmouseover="mouseOverCtrl(136, 1);" onmouseout="mouseOverCtrl(136, 0);" onclick="fudaClick(136);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos136"></td>
+<td class="utatd_50"></td>
+<td class="utatd_50" id="utd137" onmouseover="mouseOverCtrl(137, 1);" onmouseout="mouseOverCtrl(137, 0);" onclick="fudaClick(137);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos137"></td>
+<td class="utatd_50" id="utd138" onmouseover="mouseOverCtrl(138, 1);" onmouseout="mouseOverCtrl(138, 0);" onclick="fudaClick(138);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos138"></td>
+<td class="utatd_50" id="utd139" onmouseover="mouseOverCtrl(139, 1);" onmouseout="mouseOverCtrl(139, 0);" onclick="fudaClick(139);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos139"></td>
+<td class="utatd_50" id="utd140" onmouseover="mouseOverCtrl(140, 1);" onmouseout="mouseOverCtrl(140, 0);" onclick="fudaClick(140);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos140"></td>
+</tr>
+<tr id="tbl50_6">
+<td class="utatd_50" id="utd141" onmouseover="mouseOverCtrl(141, 1);" onmouseout="mouseOverCtrl(141, 0);" onclick="fudaClick(141);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos141"></td>
+<td class="utatd_50" id="utd142" onmouseover="mouseOverCtrl(142, 1);" onmouseout="mouseOverCtrl(142, 0);" onclick="fudaClick(142);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos142"></td>
+<td class="utatd_50" id="utd143" onmouseover="mouseOverCtrl(143, 1);" onmouseout="mouseOverCtrl(143, 0);" onclick="fudaClick(143);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos143"></td>
+<td class="utatd_50" id="utd144" onmouseover="mouseOverCtrl(144, 1);" onmouseout="mouseOverCtrl(144, 0);" onclick="fudaClick(144);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos144"></td>
+<td class="utatd_50" id="utd145" onmouseover="mouseOverCtrl(145, 1);" onmouseout="mouseOverCtrl(145, 0);" onclick="fudaClick(145);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos145"></td>
+<td class="utatd_50" id="utd146" onmouseover="mouseOverCtrl(146, 1);" onmouseout="mouseOverCtrl(146, 0);" onclick="fudaClick(146);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos146"></td>
+<td class="utatd_50" id="utd147" onmouseover="mouseOverCtrl(147, 1);" onmouseout="mouseOverCtrl(147, 0);" onclick="fudaClick(147);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos147"></td>
+<td class="utatd_50" id="utd148" onmouseover="mouseOverCtrl(148, 1);" onmouseout="mouseOverCtrl(148, 0);" onclick="fudaClick(148);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos148"></td>
+<td class="utatd_50" id="utd149" onmouseover="mouseOverCtrl(149, 1);" onmouseout="mouseOverCtrl(149, 0);" onclick="fudaClick(149);"><img class="utaimg_50" src="https://bepper.jp/8to/100nin1shu/torifuda/000.png" alt="" id="pos149"></td>
+</tr>
+</table>
+<div id="voice"></div>
+<br>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.async=true;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+<style type="text/css">
+<!--
+.fb_iframe_widget > span {
+  vertical-align: baseline !important;
+}
+-->
+</style>
+<script>(function(d, s, id) {
+var js, fjs = d.getElementsByTagName(s)[0];
+if (d.getElementById(id)) return;
+js = d.createElement(s); js.id = id;
+js.async = true;
+js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.0";
+fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<div class='fb-like' data-action='like' data-colorscheme='light' data-href='https://www.8toch.net/hachiben/classics/game100nin1shu.cgi' data-layout='button_count' data-send='false' data-show-faces='false'></div>
+<div class="line-it-button" style="display: none;" data-lang="ja" data-type="share-a" data-url="https://www.8toch.net/hachiben/classics/game100nin1shu.cgi"></div>
+ <script src="https://d.line-scdn.net/r/web/social-plugin/js/thirdparty/loader.min.js" async="async" defer="defer"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6617889486958649"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6617889486958649"
+     data-ad-slot="8640136294"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</td>
+</td>
+</tr>
+</table>
+<!-- さらに外側のテーブル End-->
+
+</form>
+</td></tr></table>
+<br>
+<script type="text/javascript"><!--
+	gameLoad();
+//--></script>
+<hr>
+<div class="df">
+<div style='text-align:center; font-size:14px;'>
+</div>
+</div>
+</body>
+</html>
